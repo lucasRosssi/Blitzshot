@@ -23,6 +23,7 @@ protected:
   // Called for forwards/backwards input
   void Move(const FInputActionValue& Value);
   void Look(const FInputActionValue& Value);
+  void Jump(const FInputActionValue& Value);
 
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
   class UInputMappingContext* PlayerMappingContext;
@@ -30,6 +31,8 @@ protected:
   class UInputAction* MoveAction;
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
   UInputAction* LookAction;
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction* JumpAction;
 
 public:	
 	// Called every frame

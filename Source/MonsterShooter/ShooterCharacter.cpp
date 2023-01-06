@@ -72,6 +72,11 @@ void AShooterCharacter::Look(const FInputActionValue &Value)
   AddControllerYawInput(LookAxisVector.X);
 }
 
+void AShooterCharacter::Jump(const FInputActionValue &Value)
+{
+  Super::Jump();
+}
+
 // OLD WAY !! //
 
 // void AShooterCharacter::MoveForward(const FInputActionValue& Value)
@@ -116,5 +121,6 @@ void AShooterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
   {
     EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AShooterCharacter::Move);
     EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AShooterCharacter::Look);
+    EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AShooterCharacter::Jump);
   }
 }
