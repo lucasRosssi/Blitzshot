@@ -24,6 +24,7 @@ protected:
   void Move(const FInputActionValue& Value);
   void Look(const FInputActionValue& Value);
   void Jump(const FInputActionValue& Value);
+  void FireWeapon(const FInputActionValue& Value);
 
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
   class UInputMappingContext* PlayerMappingContext;
@@ -33,6 +34,8 @@ protected:
   UInputAction* LookAction;
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
   UInputAction* JumpAction;
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction* FireWeaponAction;
 
 public:	
 	// Called every frame
@@ -49,6 +52,14 @@ private:
   // Camera that follows the character
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
   class UCameraComponent* FollowCamera;
+
+  // Randomized gunshot sound cue
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  class USoundCue* FireSound;
+
+  // Flash spawned at BarrelSockets
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  class UParticleSystem* MuzzleFlash;
 
 public:
   // Returns CameraBoom subobject
