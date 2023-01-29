@@ -22,9 +22,14 @@ protected:
 
   // Called for forwards/backwards input
   void Move(const FInputActionValue& Value);
+  // Called to handle looking input
   void Look(const FInputActionValue& Value);
+  // Called to handle jump input
   void Jump(const FInputActionValue& Value);
+  // Called to handle fire input
   void FireWeapon(const FInputActionValue& Value);
+
+  bool GetBeamEndLocation(const FVector& MuzzleSocketLocation, FVector& OutBeamLocation);
 
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
   class UInputMappingContext* PlayerMappingContext;
