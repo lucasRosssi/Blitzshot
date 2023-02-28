@@ -30,6 +30,8 @@ protected:
   void FireWeapon(const FInputActionValue& Value);
   // Set bAiming to true or false with button pressed
   void Aim(const FInputActionValue& Value);
+  // Interpolates camera zoom when aiming
+  void CameraInterpZoom(float DeltaTime);
 
   bool GetBeamEndLocation(const FVector& MuzzleSocketLocation, FVector& OutBeamLocation);
 
@@ -91,6 +93,13 @@ private:
 
   // Field of view value when zoomed in while aiming
   float CameraZoomedFOV;
+
+  // Current field of view this frame
+  float CameraCurrentFOV;
+
+  // Interp speed for zooming when aiming
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  float ZoomInterpSpeed;
 
 public:
   // Returns CameraBoom subobject
