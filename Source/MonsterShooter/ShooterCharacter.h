@@ -32,6 +32,8 @@ protected:
   void Aim(const FInputActionValue& Value);
   // Interpolates camera zoom when aiming
   void CameraInterpZoom(float DeltaTime);
+  // Set look sensitivity based on aiming
+  void SetLookRate();
 
   bool GetBeamEndLocation(const FVector& MuzzleSocketLocation, FVector& OutBeamLocation);
 
@@ -100,6 +102,18 @@ private:
   // Interp speed for zooming when aiming
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
   float ZoomInterpSpeed;
+
+  // Base look rate
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+  float BaseLookRate;
+
+  // Look rate when not aiming
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+  float HipLookRate;
+
+  // Look rate when aiming
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+  float AimingLookRate;
 
 public:
   // Returns CameraBoom subobject

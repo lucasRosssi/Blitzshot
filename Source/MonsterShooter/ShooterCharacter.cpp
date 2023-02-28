@@ -18,10 +18,15 @@
 // Sets default values
 AShooterCharacter::AShooterCharacter() :
   bAiming(false),
+  // Camera field of view values
   CameraDefaultFOV(0.f), // set in BeginPlay
   CameraZoomedFOV(45.f),
   CameraCurrentFOV(0.f),
-  ZoomInterpSpeed(20.f)
+  ZoomInterpSpeed(20.f),
+  // Look rate
+  BaseLookRate(1.f),
+  HipLookRate(1.f),
+  AimingLookRate(0.3f)
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -97,8 +102,8 @@ void AShooterCharacter::Look(const FInputActionValue &Value)
 {
   const FVector2D LookAxisVector = Value.Get<FVector2D>();
 
-  AddControllerPitchInput(LookAxisVector.Y);
-  AddControllerYawInput(LookAxisVector.X);
+  AddControllerPitchInput(LookAxisVector.Y * BaseLookRate);
+  AddControllerYawInput(LookAxisVector.X * BaseLookRate);
 }
 
 void AShooterCharacter::Jump(const FInputActionValue &Value)
@@ -298,12 +303,25 @@ void AShooterCharacter::CameraInterpZoom(float DeltaTime)
   GetFollowCamera()->SetFieldOfView(CameraCurrentFOV);
 }
 
+void AShooterCharacter::SetLookRate()
+{
+  if (bAiming)
+  {
+    BaseLookRate = AimingLookRate;
+  }
+  else
+  {
+    BaseLookRate = HipLookRate;
+  }
+}
+
 // Called every frame
 void AShooterCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
   CameraInterpZoom(DeltaTime);
+  SetLookRate();
 }
 
 // Called to bind functionality to input
