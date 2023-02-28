@@ -28,6 +28,8 @@ protected:
   void Jump(const FInputActionValue& Value);
   // Called to handle fire input
   void FireWeapon(const FInputActionValue& Value);
+  // Set bAiming to true or false with button pressed
+  void Aim(const FInputActionValue& Value);
 
   bool GetBeamEndLocation(const FVector& MuzzleSocketLocation, FVector& OutBeamLocation);
 
@@ -41,6 +43,8 @@ protected:
   UInputAction* JumpAction;
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
   UInputAction* FireWeaponAction;
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction* AimAction;
 
 public:	
 	// Called every frame
@@ -77,6 +81,16 @@ private:
   // Smoke trail for bullets
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
   UParticleSystem* BeamParticles;
+
+  // Whether the character is aiming or not
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  bool bAiming;
+
+  // Default camera field of view value
+  float CameraDefaultFOV;
+
+  // Field of view value when zoomed in while aiming
+  float CameraZoomedFOV;
 
 public:
   // Returns CameraBoom subobject

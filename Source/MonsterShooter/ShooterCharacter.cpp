@@ -16,7 +16,10 @@
 #include "Particles/ParticleSystemComponent.h"
 
 // Sets default values
-AShooterCharacter::AShooterCharacter()
+AShooterCharacter::AShooterCharacter() :
+  bAiming(false),
+  CameraDefaultFOV(0.f), // set in BeginPlay
+  CameraZoomedFOV(40.f)
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -50,6 +53,11 @@ AShooterCharacter::AShooterCharacter()
 void AShooterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+  if (FollowCamera)
+  {
+    CameraDefaultFOV = GetFollowCamera()->FieldOfView;
+  }
 
   
   if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
@@ -157,6 +165,20 @@ void AShooterCharacter::FireWeapon(const FInputActionValue &Value)
     AnimInstance->Montage_JumpToSection(FName("StartFire"));
   }
   
+}
+
+void AShooterCharacter::Aim(const FInputActionValue &Value)
+{
+  bAiming = Value.Get<bool>();
+
+  if (bAiming)
+  {
+    GetFollowCamera()->SetFieldOfView(CameraZoomedFOV);
+  }
+  else
+  {
+    GetFollowCamera()->SetFieldOfView(CameraDefaultFOV);
+  }
 }
 
 bool AShooterCharacter::GetBeamEndLocation(
@@ -274,5 +296,7 @@ void AShooterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
     EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AShooterCharacter::Look);
     EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AShooterCharacter::Jump);
     EnhancedInputComponent->BindAction(FireWeaponAction, ETriggerEvent::Triggered, this, &AShooterCharacter::FireWeapon);
+    EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &AShooterCharacter::Aim);
+    EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &AShooterCharacter::Aim);
   }
 }
