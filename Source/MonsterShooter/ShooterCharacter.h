@@ -34,6 +34,8 @@ protected:
   void CameraInterpZoom(float DeltaTime);
   // Set look sensitivity based on aiming
   void SetLookRate();
+  // Calculate crosshair spread multiplier
+  void CalculateCrosshairSpread(float DeltaTime);
 
   bool GetBeamEndLocation(const FVector& MuzzleSocketLocation, FVector& OutBeamLocation);
 
@@ -104,16 +106,30 @@ private:
   float ZoomInterpSpeed;
 
   // Base look rate
-  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"), meta = (ClampMin = "0.0", ClampMax = "1.0"))
   float BaseLookRate;
-
   // Look rate when not aiming
-  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"), meta = (ClampMin = "0.0", ClampMax = "1.0"))
   float HipLookRate;
-
   // Look rate when aiming
-  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"), meta = (ClampMin = "0.0", ClampMax = "1.0"))
   float AimingLookRate;
+
+  // Determines the spread of the crosshair
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Crosshairs, meta = (AllowPrivateAccess = "true"))
+  float CrosshairSpreadMultiplier;
+  // Velocity component for crosshair spread
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Crosshairs, meta = (AllowPrivateAccess = "true"))
+  float CrosshairVelocityFactor;
+  // In air component for crosshair spread
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Crosshairs, meta = (AllowPrivateAccess = "true"))
+  float CrosshairInAirFactor;
+  // Aim component for crosshair spread
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Crosshairs, meta = (AllowPrivateAccess = "true"))
+  float CrosshairAimFactor;
+  // Shooting component for crosshair spread
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Crosshairs, meta = (AllowPrivateAccess = "true"))
+  float CrosshairShootingFactor;
 
 public:
   // Returns CameraBoom subobject
@@ -122,5 +138,8 @@ public:
   FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
   FORCEINLINE bool GetAiming() const { return bAiming; }
+
+  UFUNCTION(BlueprintCallable)
+  float GetCrosshairSpreadMultiplier() const;
 
 };

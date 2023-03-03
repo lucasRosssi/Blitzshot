@@ -26,7 +26,13 @@ AShooterCharacter::AShooterCharacter() :
   // Look rate
   BaseLookRate(1.f),
   HipLookRate(1.f),
-  AimingLookRate(0.3f)
+  AimingLookRate(0.3f),
+  // Crosshair spread factors
+  CrosshairSpreadMultiplier(0.f),
+  CrosshairVelocityFactor(0.f),
+  CrosshairInAirFactor(0.f),
+  CrosshairAimFactor(0.f),
+  CrosshairShootingFactor(0.f)
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -109,6 +115,7 @@ void AShooterCharacter::Look(const FInputActionValue &Value)
 void AShooterCharacter::Jump(const FInputActionValue &Value)
 {
   Super::Jump();
+  bAiming = false;
 }
 
 void AShooterCharacter::FireWeapon(const FInputActionValue &Value)
@@ -177,6 +184,11 @@ void AShooterCharacter::FireWeapon(const FInputActionValue &Value)
 
 void AShooterCharacter::Aim(const FInputActionValue &Value)
 {
+  if (GetCharacterMovement()->IsFalling())
+  {
+    bAiming = false;
+    return;
+  }
   bAiming = Value.Get<bool>();
 }
 
@@ -315,6 +327,70 @@ void AShooterCharacter::SetLookRate()
   }
 }
 
+void AShooterCharacter::CalculateCrosshairSpread(float DeltaTime)
+{
+  FVector2D WalkSpeedRange{ 0.f, 600.f };
+  FVector2D VelocityMultiplierRange{ 0.f, 1.f };
+  FVector Velocity{ GetVelocity() };
+  Velocity.Z = 0.f;
+
+  // Calculate crosshair velocity factor
+  CrosshairVelocityFactor = FMath::GetMappedRangeValueClamped(
+    WalkSpeedRange,
+    VelocityMultiplierRange,
+    Velocity.Size()
+  );
+
+  // Calculate crosshair in air factor
+  if (GetCharacterMovement()->IsFalling()) // is in air?
+  {
+    // Spread the crosshair while in air
+    CrosshairInAirFactor = FMath::FInterpTo(
+      CrosshairInAirFactor,
+      2.f,
+      DeltaTime,
+      15.f
+    );
+  }
+  else // character is on the ground
+  {
+    // Shrink the crosshair after landing in the ground
+    CrosshairInAirFactor = FMath::FInterpTo(
+      CrosshairInAirFactor,
+      0.f,
+      DeltaTime,
+      5.f
+    );
+  }
+
+  if (bAiming) // is the character aiming?
+  {
+    // Shrink the crosshair when aiming
+    CrosshairAimFactor = FMath::FInterpTo(
+      CrosshairAimFactor,
+      0.5f,
+      DeltaTime,
+      20.f
+    );
+  }
+  else // not aiming
+  {
+    // Spread the crosshair back to normal when stop aiming
+    CrosshairAimFactor = FMath::FInterpTo(
+      CrosshairAimFactor,
+      0.f,
+      DeltaTime,
+      20.f
+    );
+  }
+
+  CrosshairSpreadMultiplier =
+    0.5f +
+    CrosshairVelocityFactor +
+    CrosshairInAirFactor -
+    CrosshairAimFactor;
+}
+
 // Called every frame
 void AShooterCharacter::Tick(float DeltaTime)
 {
@@ -322,6 +398,7 @@ void AShooterCharacter::Tick(float DeltaTime)
 
   CameraInterpZoom(DeltaTime);
   SetLookRate();
+  CalculateCrosshairSpread(DeltaTime);
 }
 
 // Called to bind functionality to input
@@ -335,7 +412,12 @@ void AShooterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
     EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AShooterCharacter::Look);
     EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AShooterCharacter::Jump);
     EnhancedInputComponent->BindAction(FireWeaponAction, ETriggerEvent::Triggered, this, &AShooterCharacter::FireWeapon);
-    EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &AShooterCharacter::Aim);
+    EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Triggered, this, &AShooterCharacter::Aim);
     EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &AShooterCharacter::Aim);
   }
+}
+
+float AShooterCharacter::GetCrosshairSpreadMultiplier() const
+{
+  return CrosshairSpreadMultiplier;
 }
