@@ -37,6 +37,11 @@ protected:
   // Calculate crosshair spread multiplier
   void CalculateCrosshairSpread(float DeltaTime);
 
+  void StartCrosshairBulletFire();
+
+  UFUNCTION()
+  void FinishCrosshairBulletFire();
+
   bool GetBeamEndLocation(const FVector& MuzzleSocketLocation, FVector& OutBeamLocation);
 
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
@@ -130,6 +135,10 @@ private:
   // Shooting component for crosshair spread
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Crosshairs, meta = (AllowPrivateAccess = "true"))
   float CrosshairShootingFactor;
+
+  float ShootTimeDuration;
+  bool bFiringBullet;
+  FTimerHandle CrosshairShootTimer;
 
 public:
   // Returns CameraBoom subobject

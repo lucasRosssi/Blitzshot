@@ -32,7 +32,10 @@ AShooterCharacter::AShooterCharacter() :
   CrosshairVelocityFactor(0.f),
   CrosshairInAirFactor(0.f),
   CrosshairAimFactor(0.f),
-  CrosshairShootingFactor(0.f)
+  CrosshairShootingFactor(0.f),
+  // Bullet fire timer variables
+  ShootTimeDuration(0.05f),
+  bFiringBullet(false)
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
