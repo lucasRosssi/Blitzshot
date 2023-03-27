@@ -39,10 +39,12 @@ protected:
 
   void StartCrosshairBulletFire();
 
-  UFUNCTION()
   void FinishCrosshairBulletFire();
 
   bool GetBeamEndLocation(const FVector& MuzzleSocketLocation, FVector& OutBeamLocation);
+
+  void FireButtonPressed();
+  void FireButtonReleased();
 
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
   class UInputMappingContext* PlayerMappingContext;
@@ -136,9 +138,20 @@ private:
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Crosshairs, meta = (AllowPrivateAccess = "true"))
   float CrosshairShootingFactor;
 
+  /** Time duration for the crosshair movement */
   float ShootTimeDuration;
+  /** If the weapons is firing a bullet */
   bool bFiringBullet;
+  /** Timer handle for the crosshair shoot movement */
   FTimerHandle CrosshairShootTimer;
+  /** If the fire input is pressed */
+  bool bFireButtonPressed;
+  /** True when the weapon can fire, false when waiting for the timer */
+  bool bShouldFire;
+  /** Rate of automatic gun fire */
+  float AutomaticFireRate;
+  /** Sets a timer between gunshots */
+  FTimerHandle AutoFireTimer;
 
 public:
   // Returns CameraBoom subobject
