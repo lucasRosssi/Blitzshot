@@ -34,8 +34,12 @@ AShooterCharacter::AShooterCharacter() :
   CrosshairAimFactor(0.f),
   CrosshairShootingFactor(0.f),
   // Bullet fire timer variables
-  ShootTimeDuration(0.05f),
-  bFiringBullet(false)
+  ShootTimeDuration(0.09f),
+  bFiringBullet(false),
+  // Automatic fire variables
+  AutomaticFireRate(0.1f),
+  bShouldFire(true),
+  bFireButtonPressed(false)
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -121,11 +125,8 @@ void AShooterCharacter::Jump(const FInputActionValue &Value)
   bAiming = false;
 }
 
-void AShooterCharacter::FireWeapon(const FInputActionValue &Value)
+void AShooterCharacter::FireWeapon()
 {
-  const bool bIsFiring = Value.Get<bool>();
-  if (!bIsFiring) return;
-
   if (FireSound)
   {
     UGameplayStatics::PlaySound2D(this, FireSound);
@@ -265,6 +266,36 @@ bool AShooterCharacter::GetBeamEndLocation(
   return false;
 }
 
+void AShooterCharacter::FireButtonPressed(const FInputActionValue& Value)
+{
+  bFireButtonPressed = Value.Get<bool>();
+  StartFireTimer();
+}
+
+void AShooterCharacter::StartFireTimer()
+{
+  if (bShouldFire && bFireButtonPressed)
+  {
+    FireWeapon();
+    bShouldFire = false;
+    GetWorldTimerManager().SetTimer(
+      AutoFireTimer,
+      this,
+      &AShooterCharacter::AutoFireReset,
+      AutomaticFireRate
+    );
+  }
+}
+
+void AShooterCharacter::AutoFireReset()
+{
+  bShouldFire = true;
+  if (bFireButtonPressed)
+  {
+    StartFireTimer();
+  }
+}
+
 // OLD WAY !! //
 
 // void AShooterCharacter::MoveForward(const FInputActionValue& Value)
@@ -388,14 +419,14 @@ void AShooterCharacter::CalculateCrosshairSpread(float DeltaTime)
     );
   }
 
-  // True 0.05 seconds after firing
+  // True 0.15 seconds after firing
   if (bFiringBullet)
   {
     CrosshairShootingFactor = FMath::FInterpTo(
       CrosshairShootingFactor,
-      0.3f,
+      0.4f,
       DeltaTime,
-      60.f
+      30.f
     );
   }
   else
@@ -404,7 +435,7 @@ void AShooterCharacter::CalculateCrosshairSpread(float DeltaTime)
       CrosshairShootingFactor,
       0.f,
       DeltaTime,
-      60.f
+      15.f
     );
   }
 
@@ -453,7 +484,8 @@ void AShooterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
     EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AShooterCharacter::Move);
     EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AShooterCharacter::Look);
     EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AShooterCharacter::Jump);
-    EnhancedInputComponent->BindAction(FireWeaponAction, ETriggerEvent::Triggered, this, &AShooterCharacter::FireWeapon);
+    EnhancedInputComponent->BindAction(FireWeaponAction, ETriggerEvent::Triggered, this, &AShooterCharacter::FireButtonPressed);
+    EnhancedInputComponent->BindAction(FireWeaponAction, ETriggerEvent::Completed, this, &AShooterCharacter::FireButtonPressed);
     EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Triggered, this, &AShooterCharacter::Aim);
     EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &AShooterCharacter::Aim);
   }

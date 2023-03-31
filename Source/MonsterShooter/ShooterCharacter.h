@@ -26,14 +26,16 @@ protected:
   void Look(const FInputActionValue& Value);
   // Called to handle jump input
   void Jump(const FInputActionValue& Value);
-  // Called to handle fire input
-  void FireWeapon(const FInputActionValue& Value);
   // Set bAiming to true or false with button pressed
   void Aim(const FInputActionValue& Value);
+  // Called to handle fire input
+  void FireButtonPressed(const FInputActionValue& Value);
   // Interpolates camera zoom when aiming
   void CameraInterpZoom(float DeltaTime);
   // Set look sensitivity based on aiming
   void SetLookRate();
+  
+  void FireWeapon();
   // Calculate crosshair spread multiplier
   void CalculateCrosshairSpread(float DeltaTime);
 
@@ -43,8 +45,11 @@ protected:
 
   bool GetBeamEndLocation(const FVector& MuzzleSocketLocation, FVector& OutBeamLocation);
 
-  void FireButtonPressed();
-  void FireButtonReleased();
+
+  void StartFireTimer();
+
+  UFUNCTION()
+  void AutoFireReset();
 
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
   class UInputMappingContext* PlayerMappingContext;
