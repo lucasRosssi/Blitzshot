@@ -45,11 +45,12 @@ protected:
 
   bool GetBeamEndLocation(const FVector& MuzzleSocketLocation, FVector& OutBeamLocation);
 
-
   void StartFireTimer();
 
   UFUNCTION()
   void AutoFireReset();
+
+  bool TraceUnderCrosshair(FHitResult& OutHitResult);
 
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
   class UInputMappingContext* PlayerMappingContext;
@@ -157,6 +158,8 @@ private:
   float AutomaticFireRate;
   /** Sets a timer between gunshots */
   FTimerHandle AutoFireTimer;
+
+  class AItem* LastHitItem;
 
 public:
   // Returns CameraBoom subobject

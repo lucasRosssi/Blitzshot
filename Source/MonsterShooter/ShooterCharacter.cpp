@@ -14,6 +14,8 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "DrawDebugHelpers.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "Item.h"
+#include "Components/WidgetComponent.h"
 
 // Sets default values
 AShooterCharacter::AShooterCharacter() :
@@ -464,6 +466,49 @@ void AShooterCharacter::FinishCrosshairBulletFire()
   bFiringBullet = false;
 }
 
+bool AShooterCharacter::TraceUnderCrosshair(FHitResult& OutHitResult)
+{
+  // Get Viewport size
+  FVector2D ViewportSize;
+  if (GEngine && GEngine->GameViewport)
+  {
+    GEngine->GameViewport->GetViewportSize(ViewportSize);
+  }
+
+  // Get screen space location of crosshair
+  FVector2D CrosshairLocation(ViewportSize.X / 2.f, ViewportSize.Y / 2.f);
+  FVector CrosshairWorldPosition;
+  FVector CrosshairWorldDirection;
+
+  // Get world position and direction of crosshair
+  bool bScreenToWorld = UGameplayStatics::DeprojectScreenToWorld(
+    UGameplayStatics::GetPlayerController(this, 0),
+    CrosshairLocation,
+    CrosshairWorldPosition,
+    CrosshairWorldDirection
+  );
+
+  if (bScreenToWorld)
+  {
+    // Trace from Crosshair world location outward
+    const FVector Start{ CrosshairWorldPosition };
+    const FVector End{ Start + CrosshairWorldDirection * 50'000.f };
+    GetWorld()->LineTraceSingleByChannel(
+      OutHitResult,
+      Start,
+      End,
+      ECollisionChannel::ECC_Visibility
+    );
+
+    if (OutHitResult.bBlockingHit)
+    {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 // Called every frame
 void AShooterCharacter::Tick(float DeltaTime)
 {
@@ -472,6 +517,33 @@ void AShooterCharacter::Tick(float DeltaTime)
   CameraInterpZoom(DeltaTime);
   SetLookRate();
   CalculateCrosshairSpread(DeltaTime);
+
+  FHitResult ItemTraceResult;
+  TraceUnderCrosshair(ItemTraceResult);
+  if (ItemTraceResult.bBlockingHit)
+  {
+    AItem* HitItem = Cast<AItem>(ItemTraceResult.GetActor());
+    if (HitItem && HitItem->GetPickupWidget())
+    {
+      // Memorize HitItem to hide the widget later
+      if (!LastHitItem)
+      {
+        LastHitItem = HitItem;
+      }
+
+      // Show item's Pickup Widget
+      HitItem->GetPickupWidget()->SetVisibility(true);
+    }
+    else
+    {
+      if (LastHitItem && LastHitItem->GetPickupWidget())
+      {
+        LastHitItem->GetPickupWidget()->SetVisibility(false);
+        LastHitItem = nullptr;
+      }
+    }
+  }
+  
 }
 
 // Called to bind functionality to input
