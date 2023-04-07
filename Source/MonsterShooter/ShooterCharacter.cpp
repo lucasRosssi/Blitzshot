@@ -39,9 +39,11 @@ AShooterCharacter::AShooterCharacter() :
   ShootTimeDuration(0.09f),
   bFiringBullet(false),
   // Automatic fire variables
-  AutomaticFireRate(0.1f),
+  bFireButtonPressed(false),
   bShouldFire(true),
-  bFireButtonPressed(false)
+  AutomaticFireRate(0.1f),
+  // Item trace variables
+  bShouldTraceForItems(false)
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -205,65 +207,37 @@ bool AShooterCharacter::GetBeamEndLocation(
   FVector & OutBeamLocation
 )
 {
-  // Get current size of the viewport
-  FVector2D ViewportSize;
-  if (GEngine && GEngine->GameViewport)
+  // Check for crosshair trace hit
+  FHitResult CrosshairHitResult;
+  bool bCrosshairHit = TraceUnderCrosshair(CrosshairHitResult, OutBeamLocation);
+
+  if (bCrosshairHit)
   {
-    GEngine->GameViewport->GetViewportSize(ViewportSize);
+    // Tentative beam location - still need to trace from gun
+    OutBeamLocation = CrosshairHitResult.Location;
+  }
+  else // no crosshair trace hit
+  {
+    // OutBeamLocation is the End location for the line trace
   }
 
-  // Get screen space location of crosshair
-  FVector2D CrosshairLocation(ViewportSize.X / 2.f, ViewportSize.Y / 2.f);
-  FVector CrosshairWorldPosition;
-  FVector CrosshairWorldDirection;
-
-  // Get world position and direction of crosshair
-  bool bScreenToWorld = UGameplayStatics::DeprojectScreenToWorld(
-    UGameplayStatics::GetPlayerController(this, 0),
-    CrosshairLocation,
-    CrosshairWorldPosition,
-    CrosshairWorldDirection
+  // Perform trace from gun barrel
+  FHitResult WeaponTraceHit;
+  const FVector WeaponTraceStart{ MuzzleSocketLocation };
+  const FVector StartToEnd{ OutBeamLocation - MuzzleSocketLocation };
+  const FVector WeaponTraceEnd{ MuzzleSocketLocation + StartToEnd * 1.25f };
+  GetWorld()->LineTraceSingleByChannel(
+    WeaponTraceHit,
+    WeaponTraceStart,
+    WeaponTraceEnd,
+    ECollisionChannel::ECC_Visibility
   );
 
-  if (bScreenToWorld) // was the deprojection successful?
-    {
-      FHitResult ScreenTraceHit;
-      const FVector Start{ CrosshairWorldPosition };
-      const FVector End{ CrosshairWorldPosition + CrosshairWorldDirection * 50'000.f };
-
-      // Set beam end point to line trace end point
-      OutBeamLocation = End;
-      // Trace outward from crosshair world location
-      GetWorld()->LineTraceSingleByChannel(
-        ScreenTraceHit,
-        Start,
-        End,
-        ECollisionChannel::ECC_Visibility
-      );
-
-      if (ScreenTraceHit.bBlockingHit) // was there a trace hit?
-      {
-        // Beam end point is now trace hit location
-        OutBeamLocation = ScreenTraceHit.Location;
-      }
-
-      // Perform a second trace from the gun barrel
-      FHitResult WeaponTraceHit;
-      const FVector WeaponTraceStart{ MuzzleSocketLocation };
-      const FVector WeaponTraceEnd{ OutBeamLocation };
-      GetWorld()->LineTraceSingleByChannel(
-        WeaponTraceHit,
-        WeaponTraceStart,
-        WeaponTraceEnd,
-        ECollisionChannel::ECC_Visibility
-      );
-
-      if (WeaponTraceHit.bBlockingHit) // object between barrel and BeamEndPoint?
-      {
-        OutBeamLocation = WeaponTraceHit.Location;
-      }
-      return true;
-    }
+  if (WeaponTraceHit.bBlockingHit) // object between barrel and BeamEndPoint?
+  {
+    OutBeamLocation = WeaponTraceHit.Location;
+    return true;
+  }
 
   return false;
 }
@@ -466,7 +440,7 @@ void AShooterCharacter::FinishCrosshairBulletFire()
   bFiringBullet = false;
 }
 
-bool AShooterCharacter::TraceUnderCrosshair(FHitResult& OutHitResult)
+bool AShooterCharacter::TraceUnderCrosshair(FHitResult& OutHitResult, FVector& OutHitLocation)
 {
   // Get Viewport size
   FVector2D ViewportSize;
@@ -493,6 +467,7 @@ bool AShooterCharacter::TraceUnderCrosshair(FHitResult& OutHitResult)
     // Trace from Crosshair world location outward
     const FVector Start{ CrosshairWorldPosition };
     const FVector End{ Start + CrosshairWorldDirection * 50'000.f };
+    OutHitLocation = End;
     GetWorld()->LineTraceSingleByChannel(
       OutHitResult,
       Start,
@@ -502,11 +477,64 @@ bool AShooterCharacter::TraceUnderCrosshair(FHitResult& OutHitResult)
 
     if (OutHitResult.bBlockingHit)
     {
+      OutHitLocation = OutHitResult.Location;
       return true;
     }
   }
 
   return false;
+}
+
+void AShooterCharacter::IncrementOverlappedItemCount(int8 Amount) 
+{
+  if (OverlappedItemCount + Amount <= 0)
+  {
+    OverlappedItemCount = 0;
+    bShouldTraceForItems = false;
+  }
+  else
+  {
+    OverlappedItemCount += Amount;
+    bShouldTraceForItems = true;
+  }
+}
+
+void AShooterCharacter::TraceForItems()
+{
+  if (!bShouldTraceForItems)
+  {
+    if (LastTraceHitItem && LastTraceHitItem->GetPickupWidget())
+    {
+      LastTraceHitItem->GetPickupWidget()->SetVisibility(false);
+    }
+
+    return;
+  }
+
+  FHitResult ItemTraceResult;
+  FVector HitLocation;
+  TraceUnderCrosshair(ItemTraceResult, HitLocation);
+
+  if (!ItemTraceResult.bBlockingHit)
+  {
+    return;
+  }
+
+  AItem* HitItem = Cast<AItem>(ItemTraceResult.GetActor());
+  if (HitItem && HitItem->GetPickupWidget())
+  {
+    // Show item's Pickup Widget
+    HitItem->GetPickupWidget()->SetVisibility(true);
+  }
+
+  if (LastTraceHitItem && LastTraceHitItem != HitItem)
+  {
+    // Hide widget from previous HitItem
+    LastTraceHitItem->GetPickupWidget()->SetVisibility(false);
+  }
+
+  // Store a reference of HitItem
+  LastTraceHitItem = HitItem;
 }
 
 // Called every frame
@@ -517,32 +545,7 @@ void AShooterCharacter::Tick(float DeltaTime)
   CameraInterpZoom(DeltaTime);
   SetLookRate();
   CalculateCrosshairSpread(DeltaTime);
-
-  FHitResult ItemTraceResult;
-  TraceUnderCrosshair(ItemTraceResult);
-  if (ItemTraceResult.bBlockingHit)
-  {
-    AItem* HitItem = Cast<AItem>(ItemTraceResult.GetActor());
-    if (HitItem && HitItem->GetPickupWidget())
-    {
-      // Memorize HitItem to hide the widget later
-      if (!LastHitItem)
-      {
-        LastHitItem = HitItem;
-      }
-
-      // Show item's Pickup Widget
-      HitItem->GetPickupWidget()->SetVisibility(true);
-    }
-    else
-    {
-      if (LastHitItem && LastHitItem->GetPickupWidget())
-      {
-        LastHitItem->GetPickupWidget()->SetVisibility(false);
-        LastHitItem = nullptr;
-      }
-    }
-  }
+  TraceForItems();
   
 }
 

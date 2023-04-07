@@ -50,7 +50,10 @@ protected:
   UFUNCTION()
   void AutoFireReset();
 
-  bool TraceUnderCrosshair(FHitResult& OutHitResult);
+  bool TraceUnderCrosshair(FHitResult& OutHitResult, FVector& OutHitLocation);
+
+  /** Trace for items if OverlappedItemCount >= 0 */
+  void TraceForItems();
 
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
   class UInputMappingContext* PlayerMappingContext;
@@ -159,7 +162,15 @@ private:
   /** Sets a timer between gunshots */
   FTimerHandle AutoFireTimer;
 
-  class AItem* LastHitItem;
+  /** Memorizes the Item currently being aimed at */
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Items, meta = (AllowPrivateAccess = "true"))
+  class AItem* LastTraceHitItem;
+
+  /** True if we should trace every frame for items */
+  bool bShouldTraceForItems;
+
+/** Number of overlapped AItems */
+  int8 OverlappedItemCount;
 
 public:
   // Returns CameraBoom subobject
@@ -171,5 +182,10 @@ public:
 
   UFUNCTION(BlueprintCallable)
   float GetCrosshairSpreadMultiplier() const;
+
+  FORCEINLINE int8 GetOverlappedItemCount() const { return OverlappedItemCount; }
+
+  /** Adds/subtracts to/from OverlappedItemCount and updates bShouldTraceForItems */
+  void IncrementOverlappedItemCount(int8 Amount);
 
 };
