@@ -6,6 +6,18 @@
 #include "GameFramework/Actor.h"
 #include "Item.generated.h"
 
+UENUM(BlueprintType)
+enum class EItemRarity : uint8
+{
+  EIR_Common UMETA(DisplayName = "Common"),
+  EIR_Uncommon UMETA(DisplayName = "Uncommon"),
+  EIR_Rare UMETA(DisplayName = "Rare"),
+  EIR_Epic UMETA(DisplayName = "Epic"),
+  EIR_Legendary UMETA(DisplayName = "Legendary"),
+  
+  EIR_MAX UMETA(DisplayName = "DefaultMAX")
+};
+
 UCLASS()
 class MONSTERSHOOTER_API AItem : public AActor
 {
@@ -39,6 +51,9 @@ protected:
     int32 OtherBodyIndex
   );
 
+  /** Sets the ActiveStars array of bools based on rarity */
+  void SetActiveStars();
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -59,6 +74,22 @@ private:
   /** Enables line trace when near the item */
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
   class USphereComponent* AreaSphere;
+
+  /** The name that appears in the pickup widget */
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+  FString ItemName;
+
+  /** The count (ammo...) that shows in the pickup widget */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+  int32 ItemCount;
+
+  /** Item rarity - determines number of stars and color in pickup widget */
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+  EItemRarity ItemRarity;
+
+  /** Active stars showing in the pickup widget, based on rarity */
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+  TArray<bool> ActiveStars;
 
 public:
   FORCEINLINE UWidgetComponent* GetPickupWidget() const { return PickupWidget; }
