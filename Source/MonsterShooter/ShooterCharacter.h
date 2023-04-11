@@ -55,6 +55,9 @@ protected:
   /** Trace for items if OverlappedItemCount >= 0 */
   void TraceForItems();
 
+  /** Spawn the default weapon and attach it to the mesh */
+  void SpawnDefaultWeapon();
+
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
   class UInputMappingContext* PlayerMappingContext;
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
@@ -169,8 +172,16 @@ private:
   /** True if we should trace every frame for items */
   bool bShouldTraceForItems;
 
-/** Number of overlapped AItems */
+  /** Number of overlapped AItems */
   int8 OverlappedItemCount;
+
+  /** Currently equipped weapon */
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  class AWeapon* EquippedWeapon;
+
+  /** Set this in Blueprint for the default Weapon class */
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  TSubclassOf<AWeapon> DefaultWeaponClass;
 
 public:
   // Returns CameraBoom subobject

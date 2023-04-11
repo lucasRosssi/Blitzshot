@@ -16,6 +16,7 @@
 #include "Particles/ParticleSystemComponent.h"
 #include "Item.h"
 #include "Components/WidgetComponent.h"
+#include "Weapon.h"
 
 // Sets default values
 AShooterCharacter::AShooterCharacter() :
@@ -84,7 +85,8 @@ void AShooterCharacter::BeginPlay()
     CameraCurrentFOV = CameraDefaultFOV;
   }
 
-  
+  SpawnDefaultWeapon();
+
   if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
   {
     if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
@@ -535,6 +537,29 @@ void AShooterCharacter::TraceForItems()
 
   // Store a reference of HitItem
   LastTraceHitItem = HitItem;
+}
+
+void AShooterCharacter::SpawnDefaultWeapon()
+{
+  // Check the TSubclassOf variable
+  if (!DefaultWeaponClass)
+  {
+    return;
+  }
+
+  // Spawn the Weapon
+  AWeapon* DefaultWeapon = GetWorld()->SpawnActor<AWeapon>(DefaultWeaponClass);
+  // Get the Hand Socket
+  const USkeletalMeshSocket* HandSocket = GetMesh()->GetSocketByName(FName("RightHandSocket"));
+
+  if (HandSocket)
+  {
+    // Attach the Weapon to the hand socket RightHandSocket
+    HandSocket->AttachActor(DefaultWeapon, GetMesh());
+  }
+
+  // Set EquippedWeapon to the newly spawned Weapon
+  EquippedWeapon = DefaultWeapon;
 }
 
 // Called every frame
