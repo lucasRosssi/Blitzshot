@@ -30,6 +30,24 @@ protected:
   void Aim(const FInputActionValue& Value);
   // Called to handle fire input
   void FireButtonPressed(const FInputActionValue& Value);
+  // Called to handle objects interactions
+  void Select(const FInputActionValue& Value);
+
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  class UInputMappingContext* PlayerMappingContext;
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  class UInputAction* MoveAction;
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction* LookAction;
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction* JumpAction;
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction* FireWeaponAction;
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction* AimAction;
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction* SelectAction;
+
   // Interpolates camera zoom when aiming
   void CameraInterpZoom(float DeltaTime);
   // Set look sensitivity based on aiming
@@ -61,18 +79,11 @@ protected:
   /** Takes a weapon and attaches it to the mesh */
   void EquipWeapon(AWeapon* WeaponToEquip);
 
-  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-  class UInputMappingContext* PlayerMappingContext;
-  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-  class UInputAction* MoveAction;
-  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-  UInputAction* LookAction;
-  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-  UInputAction* JumpAction;
-  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-  UInputAction* FireWeaponAction;
-  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-  UInputAction* AimAction;
+  /** Detach weapon and let it fall to the ground */
+  void DropWeapon();
+
+  /** Drops currently equipped weapon and equips TraceHitItem */
+  void SwapWeapon(AWeapon* WeaponToSwap);
 
 public:	
 	// Called every frame
@@ -185,6 +196,10 @@ private:
   /** Set this in Blueprint for the default Weapon class */
   UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
   TSubclassOf<AWeapon> DefaultWeaponClass;
+
+  /** The item currently hit by our trace in TraceForItems (can be null) */
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  AItem* TraceHitItem;
 
 public:
   // Returns CameraBoom subobject

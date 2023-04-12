@@ -100,6 +100,8 @@ void AShooterCharacter::BeginPlay()
 	
 }
 
+/* START INPUT ACTIONS */
+
 void AShooterCharacter::Move(const FInputActionValue &Value)
 {
   const FVector2D MovementVector = Value.Get<FVector2D>();
@@ -133,6 +135,33 @@ void AShooterCharacter::Jump(const FInputActionValue &Value)
   Super::Jump();
   bAiming = false;
 }
+
+void AShooterCharacter::Aim(const FInputActionValue &Value)
+{
+  if (GetCharacterMovement()->IsFalling())
+  {
+    bAiming = false;
+    return;
+  }
+  bAiming = Value.Get<bool>();
+}
+
+void AShooterCharacter::FireButtonPressed(const FInputActionValue& Value)
+{
+  bFireButtonPressed = Value.Get<bool>();
+  StartFireTimer();
+}
+
+void AShooterCharacter::Select(const FInputActionValue& Value)
+{
+  if (TraceHitItem)
+  {
+    auto TraceHitWeapon = Cast<AWeapon>(TraceHitItem);
+    SwapWeapon(TraceHitWeapon);
+  }
+}
+
+/* END INPUT ACTIONS */
 
 void AShooterCharacter::FireWeapon()
 {
@@ -197,16 +226,6 @@ void AShooterCharacter::FireWeapon()
   StartCrosshairBulletFire();
 }
 
-void AShooterCharacter::Aim(const FInputActionValue &Value)
-{
-  if (GetCharacterMovement()->IsFalling())
-  {
-    bAiming = false;
-    return;
-  }
-  bAiming = Value.Get<bool>();
-}
-
 bool AShooterCharacter::GetBeamEndLocation(
   const FVector &MuzzleSocketLocation,
   FVector & OutBeamLocation
@@ -245,12 +264,6 @@ bool AShooterCharacter::GetBeamEndLocation(
   }
 
   return false;
-}
-
-void AShooterCharacter::FireButtonPressed(const FInputActionValue& Value)
-{
-  bFireButtonPressed = Value.Get<bool>();
-  StartFireTimer();
 }
 
 void AShooterCharacter::StartFireTimer()
@@ -525,21 +538,21 @@ void AShooterCharacter::TraceForItems()
     return;
   }
 
-  AItem* HitItem = Cast<AItem>(ItemTraceResult.GetActor());
-  if (HitItem && HitItem->GetPickupWidget())
+  TraceHitItem = Cast<AItem>(ItemTraceResult.GetActor());
+  if (TraceHitItem && TraceHitItem->GetPickupWidget())
   {
     // Show item's Pickup Widget
-    HitItem->GetPickupWidget()->SetVisibility(true);
+    TraceHitItem->GetPickupWidget()->SetVisibility(true);
   }
 
-  if (LastTraceHitItem && LastTraceHitItem != HitItem)
+  if (LastTraceHitItem && LastTraceHitItem != TraceHitItem)
   {
     // Hide widget from previous HitItem
     LastTraceHitItem->GetPickupWidget()->SetVisibility(false);
   }
 
   // Store a reference of HitItem
-  LastTraceHitItem = HitItem;
+  LastTraceHitItem = TraceHitItem;
 }
 
 AWeapon* AShooterCharacter::SpawnDefaultWeapon()
@@ -575,6 +588,28 @@ void AShooterCharacter::EquipWeapon(class AWeapon* WeaponToEquip)
   EquippedWeapon->SetItemState(EItemState::EIS_Equipped);
 }
 
+void AShooterCharacter::DropWeapon()
+{
+  if (!EquippedWeapon)
+  {
+    return;
+  }
+
+  FDetachmentTransformRules DetachmentTransformRules(EDetachmentRule::KeepWorld, true);
+  EquippedWeapon->GetItemMesh()->DetachFromComponent(DetachmentTransformRules);
+
+  EquippedWeapon->SetItemState(EItemState::EIS_Falling);
+  EquippedWeapon->ThrowWeapon();
+}
+
+void AShooterCharacter::SwapWeapon(AWeapon* WeaponToSwap)
+{
+  DropWeapon();
+  EquipWeapon(WeaponToSwap);
+  TraceHitItem = nullptr;
+  LastTraceHitItem = nullptr;
+}
+
 // Called every frame
 void AShooterCharacter::Tick(float DeltaTime)
 {
@@ -601,6 +636,7 @@ void AShooterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
     EnhancedInputComponent->BindAction(FireWeaponAction, ETriggerEvent::Completed, this, &AShooterCharacter::FireButtonPressed);
     EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Triggered, this, &AShooterCharacter::Aim);
     EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &AShooterCharacter::Aim);
+    EnhancedInputComponent->BindAction(SelectAction, ETriggerEvent::Started, this, &AShooterCharacter::Select);
   }
 }
 
