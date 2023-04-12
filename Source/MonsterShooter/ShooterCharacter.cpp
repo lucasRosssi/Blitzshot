@@ -17,6 +17,8 @@
 #include "Item.h"
 #include "Components/WidgetComponent.h"
 #include "Weapon.h"
+#include "Components/BoxComponent.h"
+#include "Components/SphereComponent.h"
 
 // Sets default values
 AShooterCharacter::AShooterCharacter() :
@@ -85,7 +87,8 @@ void AShooterCharacter::BeginPlay()
     CameraCurrentFOV = CameraDefaultFOV;
   }
 
-  SpawnDefaultWeapon();
+  // Spawn the default weapon and equip it
+  EquipWeapon(SpawnDefaultWeapon());
 
   if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
   {
@@ -539,27 +542,37 @@ void AShooterCharacter::TraceForItems()
   LastTraceHitItem = HitItem;
 }
 
-void AShooterCharacter::SpawnDefaultWeapon()
+AWeapon* AShooterCharacter::SpawnDefaultWeapon()
 {
   // Check the TSubclassOf variable
   if (!DefaultWeaponClass)
   {
-    return;
+    return nullptr;
   }
 
   // Spawn the Weapon
-  AWeapon* DefaultWeapon = GetWorld()->SpawnActor<AWeapon>(DefaultWeaponClass);
+  return GetWorld()->SpawnActor<AWeapon>(DefaultWeaponClass);
+}
+
+void AShooterCharacter::EquipWeapon(class AWeapon* WeaponToEquip)
+{
+  if (!WeaponToEquip)
+  {
+    return;
+  }
+
   // Get the Hand Socket
   const USkeletalMeshSocket* HandSocket = GetMesh()->GetSocketByName(FName("RightHandSocket"));
 
   if (HandSocket)
   {
     // Attach the Weapon to the hand socket RightHandSocket
-    HandSocket->AttachActor(DefaultWeapon, GetMesh());
+    HandSocket->AttachActor(WeaponToEquip, GetMesh());
   }
 
   // Set EquippedWeapon to the newly spawned Weapon
-  EquippedWeapon = DefaultWeapon;
+  EquippedWeapon = WeaponToEquip;
+  EquippedWeapon->SetItemState(EItemState::EIS_Equipped);
 }
 
 // Called every frame

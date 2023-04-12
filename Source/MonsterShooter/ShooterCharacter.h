@@ -55,8 +55,11 @@ protected:
   /** Trace for items if OverlappedItemCount >= 0 */
   void TraceForItems();
 
-  /** Spawn the default weapon and attach it to the mesh */
-  void SpawnDefaultWeapon();
+  /** Spawn the default weapon */
+  class AWeapon* SpawnDefaultWeapon();
+
+  /** Takes a weapon and attaches it to the mesh */
+  void EquipWeapon(AWeapon* WeaponToEquip);
 
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
   class UInputMappingContext* PlayerMappingContext;
@@ -177,7 +180,7 @@ private:
 
   /** Currently equipped weapon */
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
-  class AWeapon* EquippedWeapon;
+  AWeapon* EquippedWeapon;
 
   /** Set this in Blueprint for the default Weapon class */
   UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
