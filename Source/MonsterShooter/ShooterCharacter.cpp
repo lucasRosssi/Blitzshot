@@ -49,8 +49,8 @@ AShooterCharacter::AShooterCharacter() :
   bShouldTraceForItems(false),
   OverlappedItemCount(0),
   // Camera interp location variables
-  CameraInterpDistance(250.f),
-  CameraInterpElevation(65.f)
+  CameraInterpDistance(150.f),
+  CameraInterpElevation(35.f)
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -160,8 +160,7 @@ void AShooterCharacter::Select(const FInputActionValue& Value)
 {
   if (TraceHitItem)
   {
-    auto TraceHitWeapon = Cast<AWeapon>(TraceHitItem);
-    SwapWeapon(TraceHitWeapon);
+    TraceHitItem->StartItemCurve(this);
   }
 }
 

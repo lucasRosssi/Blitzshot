@@ -6,6 +6,7 @@
 #include "Components/WidgetComponent.h"
 #include "Components/SphereComponent.h"
 #include "ShooterCharacter.h"
+#include "Camera/CameraComponent.h"
 
 // Sets default values
 AItem::AItem():
@@ -17,7 +18,9 @@ AItem::AItem():
   ItemInterpStartLocation(FVector(0.f)),
   CameraTargetLocation(FVector(0.f)),
   bInterping(false),
-  ZCurveTime(0.7f)
+  ZCurveTime(0.7f),
+  ItemInterpX(0.f),
+  ItemInterpY(0.f)
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -208,10 +211,59 @@ void AItem::SetItemProperties(EItemState State)
 
 void AItem::FinishInterping()
 {
+  bInterping = false;
   if (Character)
   {
     Character->GetPickupItem(this);
   }
+}
+
+void AItem::ItemInterp(float DeltaTime)
+{
+  if (!bInterping || !Character || !ItemZCurve) return;
+
+  // Elapsed time since we started ItemInterpTimer
+  const float ElapsedTime = GetWorldTimerManager().GetTimerElapsed(ItemInterpTimer);
+  // Get curve value corresponding to elapsed time
+  const float CurveValue = ItemZCurve->GetFloatValue(ElapsedTime);
+  // Get the item's location when the curve started
+  FVector ItemLocation = ItemInterpStartLocation;
+  // Get location in front of the camera
+  const FVector CameraInterpLocation{ Character->GetCameraInterpLocation() };
+  // Vector from item to camera interp location, X and Y are zeroed out
+  const FVector ItemToCamera{ FVector(0.f, 0.f, (CameraInterpLocation - ItemLocation).Z) };
+  // Scale factor to multiply with CurveValue
+  const float DeltaZ = ItemToCamera.Size();
+
+  const FVector CurrentLocation{ GetActorLocation() };
+  // Interpolated X value
+  const float InterpXValue = FMath::FInterpTo(
+    CurrentLocation.X,
+    CameraInterpLocation.X,
+    DeltaTime,
+    30.0f
+  );
+  // Interpolated Y value
+  const float InterpYValue = FMath::FInterpTo(
+    CurrentLocation.Y,
+    CameraInterpLocation.Y,
+    DeltaTime,
+    30.0f
+  );
+
+  // Set X and Y of ItemLocation to Interped values
+  ItemLocation.X = InterpXValue;
+  ItemLocation.Y = InterpYValue;
+
+  // Adding curve value to the Z component of the initial location (scaled by DeltaZ)
+  ItemLocation.Z += CurveValue * DeltaZ;
+  SetActorLocation(ItemLocation, true, nullptr, ETeleportType::TeleportPhysics);
+
+  // Camera rotation this frame
+  const FRotator CameraRotation{ Character->GetFollowCamera()->GetComponentRotation() };
+  // Camera rotation plus initial yaw offset
+  FRotator ItemRotation{ 0.f, CameraRotation.Yaw + 180.f, 0.f };
+  SetActorRotation(ItemRotation, ETeleportType::TeleportPhysics);
 }
 
 // Called every frame
@@ -219,6 +271,7 @@ void AItem::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+  ItemInterp(DeltaTime);
 }
 
 void AItem::SetItemState(EItemState State)

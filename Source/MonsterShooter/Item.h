@@ -72,6 +72,9 @@ protected:
   /** Called when ItemInterpTimer is finished */
   void FinishInterping();
 
+  /** Handles item interpolation when in the EquipInterping state */
+  void ItemInterp(float DeltaTime);
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -139,6 +142,10 @@ private:
   /** Pointer to the character */
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
   class AShooterCharacter* Character;
+
+  /** X and Y for the Item while interping in the EquipInterping step */
+  float ItemInterpX;
+  float ItemInterpY;
 
 public:
   FORCEINLINE UWidgetComponent* GetPickupWidget() const { return PickupWidget; }
