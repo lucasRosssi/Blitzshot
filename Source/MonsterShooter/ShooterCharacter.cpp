@@ -77,6 +77,9 @@ AShooterCharacter::AShooterCharacter() :
   bUseControllerRotationYaw = true;
   bUseControllerRotationRoll = false;
 
+  // Create Hand Scene component
+  HandSceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("HandSceneComp"));
+
   // Configure character movement
   GetCharacterMovement()->bOrientRotationToMovement = false; // Character moves in the direction of input...
   GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f); // ...at this rotation rate
@@ -168,7 +171,17 @@ void AShooterCharacter::Select(const FInputActionValue& Value)
   if (TraceHitItem)
   {
     TraceHitItem->StartItemCurve(this);
+
+    if (TraceHitItem->GetPickupSound())
+    {
+      UGameplayStatics::PlaySound2D(this, TraceHitItem->GetPickupSound());
+    }
   }
+}
+
+void AShooterCharacter::Reload(const FInputActionValue& Value)
+{
+  ReloadWeapon();
 }
 
 /* END INPUT ACTIONS */
@@ -179,7 +192,7 @@ void AShooterCharacter::FireWeapon()
 
   if (!WeaponHasAmmo())
   {
-    // Reload weapon
+    ReloadWeapon();
     return;
   }
 
@@ -258,7 +271,7 @@ void AShooterCharacter::AutoFireReset()
   }
   else
   {
-    // Reload weapon
+    ReloadWeapon();
   }
 }
 
@@ -659,6 +672,60 @@ void AShooterCharacter::PlayGunFireMontage()
   }
 }
 
+void AShooterCharacter::ReloadWeapon()
+{
+  if (!EquippedWeapon || CombatState != ECombatState::ECS_Unoccupied) return;
+
+  // Do we have ammo of the correct type?
+  if (CarryingAmmo())
+  {
+    CombatState = ECombatState::ECS_Reloading;
+
+    UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+    if (AnimInstance && ReloadMontage)
+    {
+      AnimInstance->Montage_Play(ReloadMontage, 1.2f);
+      AnimInstance->Montage_JumpToSection(EquippedWeapon->GetReloadMontageSection());
+    }
+  }
+}
+
+bool AShooterCharacter::CarryingAmmo()
+{
+  if (!EquippedWeapon) return false;
+
+  auto AmmoType = EquippedWeapon->GetAmmoType();
+
+  if (AmmoMap.Contains(AmmoType))
+  {
+    return AmmoMap[AmmoType] > 0;
+  }
+
+  return false;
+}
+
+void AShooterCharacter::GrabClip()
+{
+  if (!EquippedWeapon || !HandSceneComponent) return;
+
+  USkeletalMeshComponent* EquippedWeaponMesh = EquippedWeapon->GetItemMesh();
+  FName ClipBoneName = EquippedWeapon->GetClipBoneName();
+  // Index for the clip bone on the Equipped Weapon
+  int32 ClipBoneIndex{ EquippedWeaponMesh->GetBoneIndex(ClipBoneName) };
+  // Store the transform of the clip
+  ClipTransform = EquippedWeaponMesh->GetBoneTransform(ClipBoneIndex);
+
+  FAttachmentTransformRules AttachmentRules(EAttachmentRule::KeepRelative, true);
+  HandSceneComponent->AttachToComponent(GetMesh(), AttachmentRules, FName(TEXT("Hand_L")));
+  HandSceneComponent->SetWorldTransform(ClipTransform);
+
+  EquippedWeapon->SetMovingClip(true);
+}
+
+void AShooterCharacter::ReleaseClip()
+{
+  EquippedWeapon->SetMovingClip(false);
+}
 
 // Called every frame
 void AShooterCharacter::Tick(float DeltaTime)
@@ -687,6 +754,39 @@ void AShooterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
     EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Triggered, this, &AShooterCharacter::Aim);
     EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &AShooterCharacter::Aim);
     EnhancedInputComponent->BindAction(SelectAction, ETriggerEvent::Started, this, &AShooterCharacter::Select);
+    EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &AShooterCharacter::Reload);
+  }
+}
+
+void AShooterCharacter::FinishReloading()
+{
+  // Update the combat state
+  CombatState = ECombatState::ECS_Unoccupied;
+
+  if (!EquippedWeapon) return;
+
+  const auto AmmoType = EquippedWeapon->GetAmmoType();
+  // Update carrying ammo amount
+  if (AmmoMap.Contains(AmmoType))
+  {
+    int32 CarriedAmmo = AmmoMap[AmmoType];
+
+    const int32 MagEmptySpace = EquippedWeapon->GetMagazineCapacity() - EquippedWeapon->GetAmmo();
+
+    if (MagEmptySpace > CarriedAmmo)
+    {
+      // Reload the magazine with all the ammo we are carrying
+      EquippedWeapon->ReloadAmmo(CarriedAmmo);
+      CarriedAmmo = 0;
+      AmmoMap.Add(AmmoType, CarriedAmmo);
+    }
+    else
+    {
+      // Fill the magazine
+      EquippedWeapon->ReloadAmmo(MagEmptySpace);
+      CarriedAmmo -= MagEmptySpace;
+      AmmoMap.Add(AmmoType, CarriedAmmo);
+    }
   }
 }
 

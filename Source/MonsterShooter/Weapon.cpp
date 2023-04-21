@@ -6,7 +6,12 @@
 AWeapon::AWeapon() :
   ThrowWeaponTime(0.7f),
   bFalling(false),
-  Ammo(0)
+  MagazineCapacity(30),
+  Ammo(MagazineCapacity),
+  WeaponType(EWeaponType::EWT_SubmachineGun),
+  AmmoType(EAmmoType::EAT_9mm),
+  ReloadMontageSection(FName(TEXT("Reload SMG"))),
+  ClipBoneName(TEXT("smg_clip"))
 {
   PrimaryActorTick.bCanEverTick = true;
 }
@@ -41,6 +46,17 @@ void AWeapon::StopFalling()
   SetItemState(EItemState::EIS_Pickup);
 }
 
+void AWeapon::Tick(float DeltaTime)
+{
+  Super::Tick(DeltaTime);
+
+  if (GetItemState() == EItemState::EIS_Falling && bFalling)
+  {
+    FRotator MeshRotation{ 0.f, GetItemMesh()->GetComponentRotation().Yaw, 0.f };
+    GetItemMesh()->SetWorldRotation(MeshRotation, false, nullptr, ETeleportType::TeleportPhysics);
+  }
+}
+
 void AWeapon::ConsumeAmmo()
 {
   if (Ammo - 1 <= 0)
@@ -53,13 +69,8 @@ void AWeapon::ConsumeAmmo()
   }
 }
 
-void AWeapon::Tick(float DeltaTime)
+void AWeapon::ReloadAmmo(int32 Amount)
 {
-  Super::Tick(DeltaTime);
-
-  if (GetItemState() == EItemState::EIS_Falling && bFalling)
-  {
-    FRotator MeshRotation{ 0.f, GetItemMesh()->GetComponentRotation().Yaw, 0.f };
-    GetItemMesh()->SetWorldRotation(MeshRotation, false, nullptr, ETeleportType::TeleportPhysics);
-  }
+  checkf(Ammo + Amount <= MagazineCapacity, TEXT("Attempted to reload with more than magazine capacity"));
+  Ammo += Amount;
 }
