@@ -6,6 +6,17 @@
 #include "Animation/AnimInstance.h"
 #include "ShooterAnimInstance.generated.h"
 
+UENUM(BlueprintType)
+enum class EOffsetState : uint8
+{
+  EOS_Aiming UMETA(DisplayName = "Aiming"),
+  EOS_Hip UMETA(DisplayName = "Hip"),
+  EOS_Reloading UMETA(DisplayName = "Reloading"),
+  EOS_InAir UMETA(DisplayName = "InAir"),
+
+  EOS_MAX UMETA(DisplayName = "DefaultMAX")
+};
+
 /**
  * 
  */
@@ -25,6 +36,9 @@ public:
 protected:
   /** Handle turning in place variables */
   void TurnInPlace();
+
+  /** Handle leaning while running */
+  void Lean(float DeltaTime);
 
 private:
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
@@ -53,11 +67,11 @@ private:
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
   bool bAiming;
 
-  /** Yaw of the character this frame */
-  float CharacterYaw;
+  /** Turn in place Yaw of the character this frame */
+  float TIPCharacterYaw;
 
-  /** Yaw of the character the previous frame */
-  float CharacterYawLastFrame;
+  /** Turn in place Yaw of the character the previous frame */
+  float TIPCharacterYawLastFrame;
 
   /** Yaw offset of root bone to work with hip aim and turn in place */
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Turn In Place", meta = (AllowPrivateAccess = "true"))
@@ -76,4 +90,18 @@ private:
   /** True when reloading, used to prevent Aim Offset while reloading */
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Turn In Place", meta = (AllowPrivateAccess = "true"))
   bool bReloading;
+
+  /** State used to determine which aim offset to use */
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Turn In Place", meta = (AllowPrivateAccess = "true"))
+  EOffsetState OffsetState;
+
+  /** Character yaw this frame */
+  float CharacterYaw;
+
+  /** Character yaw last frame */
+  float CharacterYawLastFrame;
+
+  /** Yaw delta used for leaning */
+  UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Lean", meta = (AllowPrivateAccess = "true"))
+  float YawDelta;
 };
