@@ -45,6 +45,8 @@ protected:
   void Select(const FInputActionValue& Value);
   // Called to reload currently equipped weapon
   void Reload(const FInputActionValue& Value);
+  // Called to handle crouching
+  void Crouch(const FInputActionValue& Value);
 
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
   class UInputMappingContext* PlayerMappingContext;
@@ -62,6 +64,8 @@ protected:
   UInputAction* SelectAction;
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
   UInputAction* ReloadAction;
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction* CrouchAction;
 
   // Interpolates camera zoom when aiming
   void CameraInterpZoom(float DeltaTime);
@@ -278,6 +282,10 @@ private:
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
   USceneComponent* HandSceneComponent;
 
+  /** True when crouching */
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+  bool bCrouching;
+
 public:
   // Returns CameraBoom subobject
   FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
@@ -299,5 +307,6 @@ public:
   void GetPickupItem(AItem* Item);
 
   FORCEINLINE ECombatState GetCombatState() const { return CombatState; }
+  FORCEINLINE bool GetCrouching() const { return bCrouching; }
 
 };

@@ -23,7 +23,8 @@ UShooterAnimInstance::UShooterAnimInstance() :
   OffsetState(EOffsetState::EOS_Hip),
   CharacterRotation(FRotator(0.f)),
   CharacterRotationLastFrame(FRotator(0.f)),
-  YawDelta(0.f)
+  YawDelta(0.f),
+  bCrouching(false)
 {
 
 }
@@ -40,6 +41,7 @@ void UShooterAnimInstance::UpdateAnimationProperties(float DeltaTime)
     return;
   }
 
+  bCrouching = ShooterCharacter->GetCrouching();
   bReloading = ShooterCharacter->GetCombatState() == ECombatState::ECS_Reloading;
   
   // Get the speed of the character from velocity

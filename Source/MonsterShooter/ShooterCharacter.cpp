@@ -55,7 +55,8 @@ AShooterCharacter::AShooterCharacter() :
   Starting9mmAmmo(85),
   StartingARAmmo(150),
   // Combat variables
-  CombatState(ECombatState::ECS_Unoccupied)
+  CombatState(ECombatState::ECS_Unoccupied),
+  bCrouching(false)
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -182,6 +183,16 @@ void AShooterCharacter::Select(const FInputActionValue& Value)
 void AShooterCharacter::Reload(const FInputActionValue& Value)
 {
   ReloadWeapon();
+}
+
+void AShooterCharacter::Crouch(const FInputActionValue& Value)
+{
+  if (GetCharacterMovement()->IsFalling())
+  {
+    bCrouching = false;
+  }
+
+  bCrouching = !bCrouching;
 }
 
 /* END INPUT ACTIONS */
@@ -751,10 +762,12 @@ void AShooterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
     EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AShooterCharacter::Jump);
     EnhancedInputComponent->BindAction(FireWeaponAction, ETriggerEvent::Triggered, this, &AShooterCharacter::FireButtonPressed);
     EnhancedInputComponent->BindAction(FireWeaponAction, ETriggerEvent::Completed, this, &AShooterCharacter::FireButtonPressed);
-    EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Triggered, this, &AShooterCharacter::Aim);
+    EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &AShooterCharacter::Aim);
     EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &AShooterCharacter::Aim);
     EnhancedInputComponent->BindAction(SelectAction, ETriggerEvent::Started, this, &AShooterCharacter::Select);
     EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &AShooterCharacter::Reload);
+    EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &AShooterCharacter::Crouch);
+    
   }
 }
 
