@@ -56,7 +56,10 @@ AShooterCharacter::AShooterCharacter() :
   StartingARAmmo(150),
   // Combat variables
   CombatState(ECombatState::ECS_Unoccupied),
-  bCrouching(false)
+  bCrouching(false),
+  // Movement speed variables
+  BaseMovementSpeed(600.f),
+  AimMovementSpeed(300.f)
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -108,6 +111,8 @@ void AShooterCharacter::BeginPlay()
     }
   }
 
+  GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
+
   // Spawn the default weapon and equip it
   EquipWeapon(SpawnDefaultWeapon());
 
@@ -153,12 +158,25 @@ void AShooterCharacter::Jump(const FInputActionValue &Value)
 
 void AShooterCharacter::Aim(const FInputActionValue &Value)
 {
-  if (GetCharacterMovement()->IsFalling())
+  bAiming = Value.Get<bool>();
+
+  if (
+    GetCharacterMovement()->IsFalling() ||
+    CombatState == ECombatState::ECS_Reloading
+  )
   {
     bAiming = false;
-    return;
   }
-  bAiming = Value.Get<bool>();
+
+
+  if (bAiming)
+  {
+    GetCharacterMovement()->MaxWalkSpeed = AimMovementSpeed;
+  }
+  else
+  {
+    GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
+  }
 }
 
 void AShooterCharacter::FireButtonPressed(const FInputActionValue& Value)
@@ -762,7 +780,7 @@ void AShooterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
     EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AShooterCharacter::Jump);
     EnhancedInputComponent->BindAction(FireWeaponAction, ETriggerEvent::Triggered, this, &AShooterCharacter::FireButtonPressed);
     EnhancedInputComponent->BindAction(FireWeaponAction, ETriggerEvent::Completed, this, &AShooterCharacter::FireButtonPressed);
-    EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &AShooterCharacter::Aim);
+    EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Triggered, this, &AShooterCharacter::Aim);
     EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &AShooterCharacter::Aim);
     EnhancedInputComponent->BindAction(SelectAction, ETriggerEvent::Started, this, &AShooterCharacter::Select);
     EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &AShooterCharacter::Reload);

@@ -286,6 +286,14 @@ private:
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
   bool bCrouching;
 
+  /** Default movement speed, when not doing any special action */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement, meta = (AllowPrivateAccess = "true"))
+  float BaseMovementSpeed;
+
+  /** Movement speed when aiming */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement, meta = (AllowPrivateAccess = "true"))
+  float AimMovementSpeed;
+
 public:
   // Returns CameraBoom subobject
   FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
