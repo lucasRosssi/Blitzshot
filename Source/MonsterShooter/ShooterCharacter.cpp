@@ -19,6 +19,7 @@
 #include "Weapon.h"
 #include "Components/BoxComponent.h"
 #include "Components/SphereComponent.h"
+#include "Ammo.h"
 
 // Sets default values
 AShooterCharacter::AShooterCharacter() :
@@ -694,10 +695,16 @@ void AShooterCharacter::SendBullet()
 void AShooterCharacter::PlayGunFireMontage()
 {
   UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-  if (AnimInstance && HipFireMontage)
+  if (AnimInstance && HipFireMontage && !bAiming)
   {
     AnimInstance->Montage_Play(HipFireMontage);
     AnimInstance->Montage_JumpToSection(FName("StartFire"));
+  }
+
+  if (AnimInstance && AimFireMontage && bAiming)
+  {
+    AnimInstance->Montage_Play(AimFireMontage);
+    AnimInstance->Montage_JumpToSection(FName("StartAimFire"));
   }
 }
 
@@ -754,6 +761,31 @@ void AShooterCharacter::GrabClip()
 void AShooterCharacter::ReleaseClip()
 {
   EquippedWeapon->SetMovingClip(false);
+}
+
+void AShooterCharacter::PickupAmmo(AAmmo* Ammo)
+{
+  const auto AmmoType = Ammo->GetAmmoType();
+  // Check if AmmoMap contains Ammo's ammo type
+  if (AmmoMap.Find(AmmoType))
+  {
+    // Get amount of ammo in our AmmoMap for the ammo type
+    int32 AmmoCount{ AmmoMap[AmmoType] };
+    AmmoCount += Ammo->GetItemCount();
+    // Set the amount of ammo in the map for this type
+    AmmoMap[AmmoType] = AmmoCount;
+  }
+
+  if (EquippedWeapon->GetAmmoType() == AmmoType)
+  {
+    // Check if the gun is empty
+    if (EquippedWeapon->GetAmmo() == 0)
+    {
+      ReloadWeapon();
+    }
+  }
+
+  Ammo->Destroy();
 }
 
 // Called every frame
@@ -845,5 +877,11 @@ void AShooterCharacter::GetPickupItem(AItem* Item)
   if (Weapon)
   {
     SwapWeapon(Weapon);
+  }
+
+  auto Ammo = Cast<AAmmo>(Item);
+  if (Ammo)
+  {
+    PickupAmmo(Ammo);
   }
 }

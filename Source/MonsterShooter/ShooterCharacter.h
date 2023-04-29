@@ -131,6 +131,8 @@ protected:
   UFUNCTION(BlueprintCallable)
   void ReleaseClip();
 
+  void PickupAmmo(class AAmmo* Ammo);
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -293,6 +295,10 @@ private:
   /** Movement speed when aiming */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement, meta = (AllowPrivateAccess = "true"))
   float AimMovementSpeed;
+
+  // Montage for firing the weapon while aiming
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  UAnimMontage* AimFireMontage;
 
 public:
   // Returns CameraBoom subobject
