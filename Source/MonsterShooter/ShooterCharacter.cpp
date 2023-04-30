@@ -134,6 +134,9 @@ void AShooterCharacter::BeginPlay()
   EquipWeapon(SpawnDefaultWeapon());
 
   InitializeAmmoMap();
+
+  // Create FInterpLocation structs for each interp locations and add to array
+  InitializeInterpLocations();
 	
 }
 
@@ -804,6 +807,25 @@ void AShooterCharacter::PickupAmmo(AAmmo* Ammo)
   Ammo->Destroy();
 }
 
+void AShooterCharacter::InitializeInterpLocations()
+{
+  FInterpLocation WeaponLocation{ WeaponInterpComp, 0 };
+  InterpLocations.Add(WeaponLocation);
+
+  FInterpLocation InterpLocation1{ InterpComp1, 0 };
+  InterpLocations.Add(InterpLocation1);
+  FInterpLocation InterpLocation2{ InterpComp2, 0 };
+  InterpLocations.Add(InterpLocation2);
+  FInterpLocation InterpLocation3{ InterpComp3, 0 };
+  InterpLocations.Add(InterpLocation3);
+  FInterpLocation InterpLocation4{ InterpComp4, 0 };
+  InterpLocations.Add(InterpLocation4);
+  FInterpLocation InterpLocation5{ InterpComp5, 0 };
+  InterpLocations.Add(InterpLocation5);
+  FInterpLocation InterpLocation6{ InterpComp6, 0 };
+  InterpLocations.Add(InterpLocation6);
+}
+
 // Called every frame
 void AShooterCharacter::Tick(float DeltaTime)
 {
@@ -900,4 +922,14 @@ void AShooterCharacter::GetPickupItem(AItem* Item)
   {
     PickupAmmo(Ammo);
   }
+}
+
+FInterpLocation AShooterCharacter::GetInterpLocation(int32 Index)
+{
+  if (Index <= InterpLocations.Num())
+  {
+    return InterpLocations[Index];
+  }
+
+  return FInterpLocation();
 }

@@ -18,6 +18,20 @@ enum class ECombatState : uint8
   ECS_MAX UMETA(DisplayName = "DefaultMAX")
 };
 
+USTRUCT(BlueprintType)
+struct FInterpLocation
+{
+  GENERATED_BODY();
+
+  // Scene component to use for its location for interping
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+  USceneComponent* SceneComponent;
+
+  // Number of items interping to/at this scene comp location
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+  int32 ItemCount;
+};
+
 UCLASS()
 class MONSTERSHOOTER_API AShooterCharacter : public ACharacter
 {
@@ -132,6 +146,8 @@ protected:
   void ReleaseClip();
 
   void PickupAmmo(class AAmmo* Ammo);
+
+  void InitializeInterpLocations();
 
 public:	
 	// Called every frame
@@ -321,6 +337,10 @@ private:
   UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
   USceneComponent* InterpComp6;
 
+  /** Array of interp location structs */
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+  TArray<FInterpLocation> InterpLocations;
+
 public:
   // Returns CameraBoom subobject
   FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
@@ -343,5 +363,6 @@ public:
 
   FORCEINLINE ECombatState GetCombatState() const { return CombatState; }
   FORCEINLINE bool GetCrouching() const { return bCrouching; }
+  FInterpLocation GetInterpLocation(int32 Index);
 
 };
