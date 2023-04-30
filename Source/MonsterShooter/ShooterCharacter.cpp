@@ -91,6 +91,22 @@ AShooterCharacter::AShooterCharacter() :
   GetCharacterMovement()->JumpZVelocity = 600.f;
   GetCharacterMovement()->AirControl = 0.2f;
 
+  // Create interpolation components
+  WeaponInterpComp = CreateDefaultSubobject<USceneComponent>(TEXT("Weapon Interpolation Component"));
+  WeaponInterpComp->SetupAttachment(GetFollowCamera());
+  InterpComp1 = CreateDefaultSubobject<USceneComponent>(TEXT("Interpolation Component 1"));
+  InterpComp1->SetupAttachment(GetFollowCamera());
+  InterpComp2 = CreateDefaultSubobject<USceneComponent>(TEXT("Interpolation Component 2"));
+  InterpComp2->SetupAttachment(GetFollowCamera());
+  InterpComp3 = CreateDefaultSubobject<USceneComponent>(TEXT("Interpolation Component 3"));
+  InterpComp3->SetupAttachment(GetFollowCamera());
+  InterpComp4 = CreateDefaultSubobject<USceneComponent>(TEXT("Interpolation Component 4"));
+  InterpComp4->SetupAttachment(GetFollowCamera());
+  InterpComp5 = CreateDefaultSubobject<USceneComponent>(TEXT("Interpolation Component 5"));
+  InterpComp5->SetupAttachment(GetFollowCamera());
+  InterpComp6 = CreateDefaultSubobject<USceneComponent>(TEXT("Interpolation Component 6"));
+  InterpComp6->SetupAttachment(GetFollowCamera());
+
 }
 
 // Called when the game starts or when spawned
@@ -190,12 +206,12 @@ void AShooterCharacter::Select(const FInputActionValue& Value)
 {
   if (TraceHitItem)
   {
-    TraceHitItem->StartItemCurve(this);
-
-    if (TraceHitItem->GetPickupSound())
+    auto TraceHitAmmo = Cast<AAmmo>(TraceHitItem);
+    if (TraceHitAmmo)
     {
-      UGameplayStatics::PlaySound2D(this, TraceHitItem->GetPickupSound(), 0.5f, 1.2f);
+      TraceHitAmmo->GetAmmoCollisionSphere()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     }
+    TraceHitItem->StartItemCurve(this);
   }
 }
 

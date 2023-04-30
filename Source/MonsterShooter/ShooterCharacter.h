@@ -296,9 +296,30 @@ private:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement, meta = (AllowPrivateAccess = "true"))
   float AimMovementSpeed;
 
-  // Montage for firing the weapon while aiming
+  /** Montage for firing the weapon while aiming */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
   UAnimMontage* AimFireMontage;
+
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+  USceneComponent* WeaponInterpComp;
+
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+  USceneComponent* InterpComp1;
+
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+  USceneComponent* InterpComp2;
+
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+  USceneComponent* InterpComp3;
+
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+  USceneComponent* InterpComp4;
+
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+  USceneComponent* InterpComp5;
+
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+  USceneComponent* InterpComp6;
 
 public:
   // Returns CameraBoom subobject
