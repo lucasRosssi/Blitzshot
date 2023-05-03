@@ -341,6 +341,22 @@ private:
   UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
   TArray<FInterpLocation> InterpLocations;
 
+  FTimerHandle PickupSoundTimer;
+  FTimerHandle EquipSoundTimer;
+
+  bool bShouldPlayPickupSound;
+  bool bShouldPlayEquipSound;
+
+  void ResetPickupSoundTimer();
+  void ResetEquipSoundTimer();
+
+  /** Time to wait before another sound can be played */
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Items, meta = (AllowPrivateAccess = "true"))
+  float PickupSoundResetTime;
+  /** Time to wait before another sound can be played */
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Items, meta = (AllowPrivateAccess = "true"))
+  float EquipSoundResetTime;
+
 public:
   // Returns CameraBoom subobject
   FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
@@ -357,12 +373,24 @@ public:
   /** Adds/subtracts to/from OverlappedItemCount and updates bShouldTraceForItems */
   void IncrementOverlappedItemCount(int8 Amount);
 
-  FVector GetCameraInterpLocation();
+  // No longer needed
+  // FVector GetCameraInterpLocation();
 
   void GetPickupItem(AItem* Item);
 
   FORCEINLINE ECombatState GetCombatState() const { return CombatState; }
   FORCEINLINE bool GetCrouching() const { return bCrouching; }
   FInterpLocation GetInterpLocation(int32 Index);
+
+  // Returns the index in InterpLocations array with the lowest item count
+  int32 GetInterpLocationIndex();
+
+  void IncrementInterpLocItemCount(int32 Index, int32 Amount);
+
+  FORCEINLINE bool ShouldPlayPickupSound() const { return bShouldPlayPickupSound; }
+  FORCEINLINE bool ShouldPlayEquipSound() const { return bShouldPlayEquipSound; }
+
+  void StartPickupSoundTimer();
+  void StartEquipSoundTimer();
 
 };

@@ -95,7 +95,7 @@ void AAmmo::AmmoSphereOverlap(
     auto OverlappedCharacter = Cast<AShooterCharacter>(OtherActor);
     if (OverlappedCharacter)
     {
-      OverlappedCharacter->GetPickupItem(this);
+      StartItemCurve(OverlappedCharacter);
       AmmoCollisionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     }
   }
