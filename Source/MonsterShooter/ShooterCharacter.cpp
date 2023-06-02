@@ -563,6 +563,7 @@ void AShooterCharacter::TraceForItems()
     if (LastTraceHitItem && LastTraceHitItem->GetPickupWidget())
     {
       LastTraceHitItem->GetPickupWidget()->SetVisibility(false);
+      LastTraceHitItem->DisableGlowMaterial();
     }
 
     return;
@@ -582,12 +583,14 @@ void AShooterCharacter::TraceForItems()
   {
     // Show item's Pickup Widget
     TraceHitItem->GetPickupWidget()->SetVisibility(true);
+    TraceHitItem->EnableGlowMaterial();
   }
 
   if (LastTraceHitItem && LastTraceHitItem != TraceHitItem)
   {
     // Hide widget from previous HitItem
     LastTraceHitItem->GetPickupWidget()->SetVisibility(false);
+    LastTraceHitItem->DisableGlowMaterial();
   }
 
   // Store a reference of HitItem

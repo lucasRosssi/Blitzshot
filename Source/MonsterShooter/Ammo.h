@@ -59,4 +59,7 @@ public:
   FORCEINLINE EAmmoType GetAmmoType() const { return AmmoType; }
   FORCEINLINE USphereComponent* GetAmmoCollisionSphere() const { return AmmoCollisionSphere; }
 
+  virtual void EnableCustomDepth() override;
+  virtual void DisableCustomDepth() override;
+
 };
