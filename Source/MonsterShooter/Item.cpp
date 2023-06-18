@@ -9,6 +9,7 @@
 #include "Camera/CameraComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
+#include "Curves/CurveVector.h"
 
 // Sets default values
 AItem::AItem():
@@ -27,10 +28,13 @@ AItem::AItem():
   InterpLocIndex(0),
   MaterialIndex(0),
   // Dynamic Material Parameters
-  PulseCurveTime(5.f),
-  GlowAmount(150.f),
-  FresnelExponent(3.f),
-  FresnelReflectFraction(4.f)
+  // PulseCurveTime(5.f),
+  // GlowAmount(150.f),
+  // FresnelExponent(3.f),
+  // FresnelReflectFraction(4.f)
+
+  // Inventory
+  SlotIndex(0)
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -70,6 +74,8 @@ void AItem::BeginPlay()
   SetItemProperties(ItemState);
 
   InitializeCustomDepth();
+
+  // ResetPulseTimer();
 }
 
 void AItem::OnSphereOverlap(
@@ -225,6 +231,22 @@ void AItem::SetItemProperties(EItemState State)
       // Material effects
       DisableGlowMaterial();
       DisableCustomDepth();
+      break;
+    case EItemState::EIS_PickedUp:
+    PickupWidget->SetVisibility(false);
+      // Set mesh properties
+      ItemMesh->SetSimulatePhysics(false);
+      ItemMesh->SetEnableGravity(false);
+      ItemMesh->SetVisibility(false);
+      ItemMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+      ItemMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+      // Set area sphere properties
+      AreaSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+      AreaSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+      // Set collision box properties
+      CollisionBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+      CollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+      // Material effects
       break;
   }
 }
@@ -383,6 +405,28 @@ void AItem::DisableGlowMaterial()
   }
 }
 
+// void AItem::ResetPulseTimer()
+// {  
+//   if (ItemState == EItemState::EIS_Pickup)
+//   {
+//     GetWorldTimerManager().SetTimer(PulseTimer, this, &AItem::ResetPulseTimer, PulseCurveTime);
+//   }
+// }
+
+// void AItem::UpdatePulse()
+// {
+//   if (ItemState != EItemState::EIS_Pickup) return;
+
+//   const float ElapsedTime{ GetWorldTimerManager().GetTimerElapsed(PulseTimer) };
+
+//   if (PulseCurve)
+//   {
+//     const FVector CurveValue{ PulseCurve->GetVectorValue(ElapsedTime) };
+//     DynamicMaterialInstance->SetScalarParameterValue(TEXT("GlowAmount"), CurveValue.X * GlowAmount);
+//     DynamicMaterialInstance->SetScalarParameterValue(TEXT("FresnelExponent"), CurveValue.Y * FresnelExponent);
+//     DynamicMaterialInstance->SetScalarParameterValue(TEXT("FresnelReflectFraction"), CurveValue.Z * FresnelReflectFraction);
+//   }
+// }
 
 // Called every frame
 void AItem::Tick(float DeltaTime)
@@ -390,6 +434,8 @@ void AItem::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
   ItemInterp(DeltaTime);
+
+  // UpdatePulse();
 }
 
 void AItem::SetItemState(EItemState State)

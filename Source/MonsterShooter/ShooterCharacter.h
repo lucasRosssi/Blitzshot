@@ -32,6 +32,12 @@ struct FInterpLocation
   int32 ItemCount;
 };
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
+  FEquipItemDelegate,
+  int32, CurrentSlotIndex,
+  int32, NewSlotIndex
+)
+
 UCLASS()
 class MONSTERSHOOTER_API AShooterCharacter : public ACharacter
 {
@@ -356,6 +362,18 @@ private:
   /** Time to wait before another sound can be played */
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Items, meta = (AllowPrivateAccess = "true"))
   float EquipSoundResetTime;
+
+  /** Array of AItems for our Inventory */
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Inventory, meta = (AllowPrivateAccess = "true"))
+  TArray<AItem*> Inventory;
+
+  const int32 MAIN_INVENTORY_CAPACITY{ 4 };
+  // const int32 HANDGUN_INVENTORY{ 1 };
+  // const int32 MELEE_INVENTORY{ 1 };
+
+  /** Delegate for sending slot information to inventory bar when equipping */
+  UPROPERTY(BlueprintAssignable, Category = Delegates, meta = (AllowPrivateAccess = "true"))
+  FEquipItemDelegate EquipItemDelegate;
 
 public:
   // Returns CameraBoom subobject
