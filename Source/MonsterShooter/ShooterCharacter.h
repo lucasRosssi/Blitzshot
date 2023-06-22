@@ -68,6 +68,11 @@ protected:
   // Called to handle crouching
   void Crouch(const FInputActionValue& Value);
 
+  void SwitchWeapon1(const FInputActionValue& Value);
+  void SwitchWeapon2(const FInputActionValue& Value);
+  void SwitchWeapon3(const FInputActionValue& Value);
+  void SwitchMelee(const FInputActionValue& Value);
+
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
   class UInputMappingContext* PlayerMappingContext;
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
@@ -86,6 +91,14 @@ protected:
   UInputAction* ReloadAction;
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
   UInputAction* CrouchAction;
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction* SwitchWeapon1Action;
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction* SwitchWeapon2Action;
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction* SwitchWeapon3Action;
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction* SwitchMeleeAction;
 
   // Interpolates camera zoom when aiming
   void CameraInterpZoom(float DeltaTime);
@@ -154,6 +167,8 @@ protected:
   void PickupAmmo(class AAmmo* Ammo);
 
   void InitializeInterpLocations();
+
+  void ExchangeInventoryItems(int32 CurrentItemIndex, int32 NewItemIndex);
 
 public:	
 	// Called every frame
