@@ -14,7 +14,7 @@ enum class EItemRarity : uint8
   EIR_Rare UMETA(DisplayName = "Rare"),
   EIR_Epic UMETA(DisplayName = "Epic"),
   EIR_Legendary UMETA(DisplayName = "Legendary"),
-  
+
   EIR_MAX UMETA(DisplayName = "DefaultMAX")
 };
 
@@ -26,7 +26,7 @@ enum class EItemState : uint8
   EIS_PickedUp UMETA(DisplayName = "PickedUp"),
   EIS_Equipped UMETA(DisplayName = "Equipped"),
   EIS_Falling UMETA(DisplayName = "Falling"),
-  
+
   EIS_MAX UMETA(DisplayName = "DefaultMAX")
 };
 
@@ -42,35 +42,33 @@ enum class EItemType : uint8
 UCLASS()
 class MONSTERSHOOTER_API AItem : public AActor
 {
-	GENERATED_BODY()
-	
-public:	
-	// Sets default values for this actor's properties
-	AItem();
+  GENERATED_BODY()
+
+public:
+  // Sets default values for this actor's properties
+  AItem();
 
 protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+  // Called when the game starts or when spawned
+  virtual void BeginPlay() override;
 
   /** Called when overlapping AreaSphere */
   UFUNCTION()
   void OnSphereOverlap(
-    UPrimitiveComponent* OverlappedComponent,
-    AActor* OtherActor,
-    UPrimitiveComponent* OtherComp,
-    int32 OtherBodyIndex,
-    bool bFromSweep,
-    const FHitResult& SweepResult
-  );
+      UPrimitiveComponent *OverlappedComponent,
+      AActor *OtherActor,
+      UPrimitiveComponent *OtherComp,
+      int32 OtherBodyIndex,
+      bool bFromSweep,
+      const FHitResult &SweepResult);
 
   /** Called when ending overlap in AreaSphere */
   UFUNCTION()
   void OnSphereEndOverlap(
-    UPrimitiveComponent* OverlappedComponent,
-    AActor* OtherActor,
-    UPrimitiveComponent* OtherComp,
-    int32 OtherBodyIndex
-  );
+      UPrimitiveComponent *OverlappedComponent,
+      AActor *OtherActor,
+      UPrimitiveComponent *OtherComp,
+      int32 OtherBodyIndex);
 
   /** Sets the ActiveStars array of bools based on rarity */
   void SetActiveStars();
@@ -89,17 +87,17 @@ protected:
 
   void PlayPickupSound();
 
-  virtual void InitializeCustomDepth();  
+  virtual void InitializeCustomDepth();
 
-  virtual void OnConstruction(const FTransform& Transform) override;
+  virtual void OnConstruction(const FTransform &Transform) override;
 
   // void ResetPulseTimer();
 
   // void UpdatePulse();
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+public:
+  // Called every frame
+  virtual void Tick(float DeltaTime) override;
 
   // Called in ShooterCharacter::GetPickupItem()
   void PlayEquipSound();
@@ -107,19 +105,23 @@ public:
 private:
   /** Skeletal Mesh for the item */
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
-  USkeletalMeshComponent* ItemMesh;
+  USkeletalMeshComponent *ItemMesh;
 
   /** Line trace collides with box to show HUD widgets */
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
-  class UBoxComponent* CollisionBox;
+  class UBoxComponent *CollisionBox;
 
   /** Popup widget for when the player look at the item */
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
-  class UWidgetComponent* PickupWidget;
+  class UWidgetComponent *PickupWidget;
 
   /** Enables line trace when near the item */
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
-  class USphereComponent* AreaSphere;
+  class USphereComponent *AreaSphere;
+
+  /** Light component for the item rarity when on the ground */
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+  class ULightComponent *RarityLight;
 
   /** The name that appears in the pickup widget */
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
@@ -143,7 +145,7 @@ private:
 
   /** The curve asset to use for the item's Z location when interping */
   UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
-  class UCurveFloat* ItemZCurve;
+  class UCurveFloat *ItemZCurve;
 
   /** Starting location when interping begins */
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
@@ -166,7 +168,7 @@ private:
 
   /** Pointer to the character */
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
-  class AShooterCharacter* Character;
+  class AShooterCharacter *Character;
 
   /** X and Y for the Item while interping in the EquipInterping step */
   float ItemInterpX;
@@ -174,15 +176,15 @@ private:
 
   /** Curve used to scale the item when interping */
   UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
-  UCurveFloat* ItemScaleCurve;
+  UCurveFloat *ItemScaleCurve;
 
   /** Sound played when item is picked up */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
-  class USoundCue* PickupSound;
+  class USoundCue *PickupSound;
 
   /** Sound played when item is equipped */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
-  USoundCue* EquipSound;
+  USoundCue *EquipSound;
 
   /** Type of the item */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
@@ -198,11 +200,11 @@ private:
 
   /** Dynamic instance that we can change at runtime */
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
-  UMaterialInstanceDynamic* DynamicMaterialInstance;
+  UMaterialInstanceDynamic *DynamicMaterialInstance;
 
   /** Material instance used with Dynamic Material Instance */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
-  UMaterialInstance* MaterialInstance;
+  UMaterialInstance *MaterialInstance;
 
   // /** Curve to drive the dynamic material parameters */
   // UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
@@ -225,35 +227,34 @@ private:
 
   /** Background for this item in the inventory */
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory", meta = (AllowPrivateAccess = "true"))
-  UTexture2D* IconBackground;
+  UTexture2D *IconBackground;
 
   /** Icon for this item in the inventory */
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory", meta = (AllowPrivateAccess = "true"))
-  UTexture2D* IconItem;
+  UTexture2D *IconItem;
 
   /** Slot in the inventory array */
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory", meta = (AllowPrivateAccess = "true"))
   int32 SlotIndex;
 
 public:
-  FORCEINLINE UWidgetComponent* GetPickupWidget() const { return PickupWidget; }
-  FORCEINLINE USphereComponent* GetAreaSphere() const { return AreaSphere; }
-  FORCEINLINE UBoxComponent* GetCollisionBox() const { return CollisionBox; }
+  FORCEINLINE UWidgetComponent *GetPickupWidget() const { return PickupWidget; }
+  FORCEINLINE USphereComponent *GetAreaSphere() const { return AreaSphere; }
+  FORCEINLINE UBoxComponent *GetCollisionBox() const { return CollisionBox; }
   FORCEINLINE EItemState GetItemState() const { return ItemState; }
   void SetItemState(EItemState State);
-  FORCEINLINE USkeletalMeshComponent* GetItemMesh() const { return ItemMesh; }
-  FORCEINLINE USoundCue* GetPickupSound() const { return PickupSound; }
-  FORCEINLINE USoundCue* GetEquipSound() const { return EquipSound; }
+  FORCEINLINE USkeletalMeshComponent *GetItemMesh() const { return ItemMesh; }
+  FORCEINLINE USoundCue *GetPickupSound() const { return PickupSound; }
+  FORCEINLINE USoundCue *GetEquipSound() const { return EquipSound; }
   FORCEINLINE int32 GetItemCount() const { return ItemCount; }
   FORCEINLINE int32 GetSlotIndex() const { return SlotIndex; }
   FORCEINLINE void SetSlotIndex(int32 Index) { SlotIndex = Index; }
 
   /** Called from the AShooterCharacter class */
-  void StartItemCurve(AShooterCharacter* Char);
+  void StartItemCurve(AShooterCharacter *Char);
 
   virtual void EnableCustomDepth();
   virtual void DisableCustomDepth();
   void EnableGlowMaterial();
   void DisableGlowMaterial();
-
 };
