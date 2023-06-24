@@ -177,6 +177,7 @@ protected:
   UFUNCTION(BlueprintCallable)
   void GrabWeapon();
   AWeapon *WeaponToGrab;
+  int32 LastSlotIndexDelegate{0};
 
   UFUNCTION(BlueprintCallable)
   void FinishEquipping();

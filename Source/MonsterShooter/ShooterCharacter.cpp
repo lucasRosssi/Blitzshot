@@ -903,33 +903,32 @@ void AShooterCharacter::ExchangeInventoryItems(int32 CurrentItemIndex, int32 New
 {
   bool bCanSwitchWeapon = (CombatState == ECombatState::ECS_Unoccupied || CombatState == ECombatState::ECS_Reloading || CombatState == ECombatState::ECS_Equipping);
 
-  if ((CurrentItemIndex == NewItemIndex) || (NewItemIndex >= Inventory.Num()) || !bCanSwitchWeapon)
+  if ((CurrentItemIndex == NewItemIndex) || (NewItemIndex >= Inventory.Num()) || NewItemIndex == LastSlotIndexDelegate || !bCanSwitchWeapon)
   {
     return;
   }
 
   UAnimInstance *AnimInstance = GetMesh()->GetAnimInstance();
 
-  if (AnimInstance)
+  if (AnimInstance && EquipMontage)
   {
-    if (CombatState == ECombatState::ECS_Reloading && ReloadMontage)
+    if (CombatState == ECombatState::ECS_Reloading)
     {
-      AnimInstance->Montage_Stop(0.1f, ReloadMontage);
+      EquippedWeapon->SetMovingClip(false);
     }
 
     CombatState = ECombatState::ECS_Equipping;
 
-    if (EquipMontage)
-    {
-      AnimInstance->Montage_Play(EquipMontage, 1.0f);
-      AnimInstance->Montage_JumpToSection(FName("Equip"));
-    }
+    AnimInstance->Montage_Play(EquipMontage, 1.0f);
+    AnimInstance->Montage_JumpToSection(FName("Equip"));
   }
 
   auto NewWeapon = Cast<AWeapon>(Inventory[NewItemIndex]);
   WeaponToGrab = NewWeapon;
 
-  EquipItemDelegate.Broadcast(EquippedWeapon->GetSlotIndex(), NewWeapon->GetSlotIndex());
+  EquipItemDelegate.Broadcast(LastSlotIndexDelegate, NewWeapon->GetSlotIndex());
+
+  LastSlotIndexDelegate = NewWeapon->GetSlotIndex();
 }
 
 void AShooterCharacter::GrabWeapon()
