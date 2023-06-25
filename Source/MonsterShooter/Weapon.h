@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Item.h"
 #include "AmmoType.h"
+#include "Engine/DataTable.h"
 #include "Weapon.generated.h"
 
 UENUM(BlueprintType)
@@ -16,13 +17,37 @@ enum class EWeaponType : uint8
   EWT_MAX UMETA(DisplayName = "DefaultMax")
 };
 
+USTRUCT(BlueprintType)
+struct FWeaponProperties : public FTableRowBase
+{
+  GENERATED_BODY()
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  EAmmoType AmmoType;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  int32 Ammo;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  int32 MagazineCapacity;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  USkeletalMesh *ItemMesh;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  FString WeaponName;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UTexture2D *InventoryIcon;
+};
+
 /**
- * 
+ *
  */
 UCLASS()
 class MONSTERSHOOTER_API AWeapon : public AItem
 {
-	GENERATED_BODY()
+  GENERATED_BODY()
 public:
   AWeapon();
 
@@ -31,26 +56,16 @@ public:
 protected:
   void StopFalling();
 
+  virtual void OnConstruction(const FTransform &Transform) override;
+
 private:
   FTimerHandle ThrowWeaponTimer;
   float ThrowWeaponTime;
   bool bFalling;
 
-  /** Maximum ammo the weapon can hold */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
-  int32 MagazineCapacity;
-
-  /** Ammo count for this weapon */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
-  int32 Ammo;
-
   /** Type of the weapon */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
   EWeaponType WeaponType;
-
-  /** Ammo type that the weapon uses */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
-  EAmmoType AmmoType;
 
   /** Name of the weapon reload montage section */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
@@ -63,6 +78,22 @@ private:
   /** Name for the clip bone */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
   FName ClipBoneName;
+
+  /** Data table for the weapon properties */
+  UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Data Table", meta = (AllowPrivateAccess = "true"))
+  UDataTable *WeaponDataTable;
+
+  /** Maximum ammo the weapon can hold */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
+  int32 MagazineCapacity;
+
+  /** Ammo count for this weapon */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
+  int32 Ammo;
+
+  /** Ammo type that the weapon uses */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
+  EAmmoType AmmoType;
 
 public:
   // Adds impulse to the thrown Weapon
@@ -83,5 +114,4 @@ public:
   FORCEINLINE void SetMovingClip(bool Move) { bMovingClip = Move; }
 
   bool ClipIsFull();
-
 };

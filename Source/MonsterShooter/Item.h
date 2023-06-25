@@ -273,6 +273,8 @@ public:
   FORCEINLINE int32 GetItemCount() const { return ItemCount; }
   FORCEINLINE int32 GetSlotIndex() const { return SlotIndex; }
   FORCEINLINE void SetSlotIndex(int32 Index) { SlotIndex = Index; }
+  FORCEINLINE void SetItemName(FString Name) { ItemName = Name; }
+  FORCEINLINE void SetIconItem(UTexture2D *Icon) { IconItem = Icon; }
 
   /** Called from the AShooterCharacter class */
   void StartItemCurve(AShooterCharacter *Char);
