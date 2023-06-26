@@ -18,13 +18,13 @@ enum class EOffsetState : uint8
 };
 
 /**
- * 
+ *
  */
 UCLASS()
 class MONSTERSHOOTER_API UShooterAnimInstance : public UAnimInstance
 {
-	GENERATED_BODY()
-	
+  GENERATED_BODY()
+
 public:
   UShooterAnimInstance();
 
@@ -41,19 +41,19 @@ protected:
   void Lean(float DeltaTime);
 
 private:
-  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-  class AShooterCharacter* ShooterCharacter;
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+  class AShooterCharacter *ShooterCharacter;
 
   // The speed of the character
-  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
   float Speed;
 
   // Whether or not the character is in the air
-  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
   bool bIsInAir;
 
   // Whether or not the character is moving
-  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
   bool bIsAccelerating;
 
   // Offset yaw used for strafing
@@ -64,7 +64,7 @@ private:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement, meta = (AllowPrivateAccess = "true"))
   float LastMovementOffsetYaw;
 
-  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
   bool bAiming;
 
   /** Turn in place Yaw of the character this frame */
@@ -74,7 +74,7 @@ private:
   float TIPCharacterYawLastFrame;
 
   /** Yaw offset of root bone to work with hip aim and turn in place */
-  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Turn In Place", meta = (AllowPrivateAccess = "true"))
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Turn In Place", meta = (AllowPrivateAccess = "true"))
   float RootYawOffset;
 
   /** Rotation curve value this frame */
@@ -84,15 +84,15 @@ private:
   float RotationCurveLastFrame;
 
   /** Pitch of aim rotation, used for Aim Offset */
-  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Turn In Place", meta = (AllowPrivateAccess = "true"))
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Turn In Place", meta = (AllowPrivateAccess = "true"))
   float Pitch;
 
   /** True when reloading, used to prevent Aim Offset while reloading */
-  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Turn In Place", meta = (AllowPrivateAccess = "true"))
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Turn In Place", meta = (AllowPrivateAccess = "true"))
   bool bReloading;
 
   /** State used to determine which aim offset to use */
-  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Turn In Place", meta = (AllowPrivateAccess = "true"))
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Turn In Place", meta = (AllowPrivateAccess = "true"))
   EOffsetState OffsetState;
 
   /** Character rotation this frame */
@@ -102,10 +102,14 @@ private:
   FRotator CharacterRotationLastFrame;
 
   /** Yaw delta used for leaning */
-  UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Lean, meta = (AllowPrivateAccess = "true"))
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Lean, meta = (AllowPrivateAccess = "true"))
   float YawDelta;
 
   /** True when crouching */
-  UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Crouching, meta = (AllowPrivateAccess = "true"))
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Crouching, meta = (AllowPrivateAccess = "true"))
   bool bCrouching;
+
+  /** Whether or not we should use FABRIK in the animation */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  bool bShouldUseFABRIK;
 };

@@ -275,6 +275,12 @@ public:
   FORCEINLINE void SetSlotIndex(int32 Index) { SlotIndex = Index; }
   FORCEINLINE void SetItemName(FString Name) { ItemName = Name; }
   FORCEINLINE void SetIconItem(UTexture2D *Icon) { IconItem = Icon; }
+  FORCEINLINE void SetMaterialInstance(UMaterialInstance *Instance) { MaterialInstance = Instance; }
+  FORCEINLINE UMaterialInstance *GetMaterialInstance() const { return MaterialInstance; }
+  FORCEINLINE void SetDynamicMaterialInstance(UMaterialInstanceDynamic *Instance) { DynamicMaterialInstance = Instance; }
+  FORCEINLINE UMaterialInstanceDynamic *GetDynamicMaterialInstance() const { return DynamicMaterialInstance; }
+  FORCEINLINE int32 GetMaterialIndex() const { return MaterialIndex; }
+  FORCEINLINE void SetMaterialIndex(int32 Index) { MaterialIndex = Index; }
 
   /** Called from the AShooterCharacter class */
   void StartItemCurve(AShooterCharacter *Char);

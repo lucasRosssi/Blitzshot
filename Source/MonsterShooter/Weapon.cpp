@@ -69,6 +69,19 @@ void AWeapon::OnConstruction(const FTransform &Transform)
       GetItemMesh()->SetSkeletalMesh(WeaponDataRow->ItemMesh);
       SetItemName(WeaponDataRow->WeaponName);
       SetIconItem(WeaponDataRow->InventoryIcon);
+
+      SetMaterialInstance(WeaponDataRow->MaterialInstance);
+      PreviousMaterialIndex = GetMaterialIndex();
+      GetItemMesh()->SetMaterial(PreviousMaterialIndex, nullptr);
+      SetMaterialIndex(WeaponDataRow->MaterialIndex);
+      ClipBoneName = WeaponDataRow->ClipBoneName;
+      ReloadMontageSection = WeaponDataRow->ReloadMontageSection;
+    }
+
+    if (GetMaterialInstance())
+    {
+      SetDynamicMaterialInstance(UMaterialInstanceDynamic::Create(GetMaterialInstance(), this));
+      GetItemMesh()->SetMaterial(GetMaterialIndex(), GetDynamicMaterialInstance());
     }
   }
 }
