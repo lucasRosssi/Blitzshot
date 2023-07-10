@@ -60,6 +60,8 @@ protected:
   void Aim(const FInputActionValue &Value);
   // Called to handle fire input
   void FireButtonPressed(const FInputActionValue &Value);
+  // Called to handle fire input releas
+  void FireButtonReleased(const FInputActionValue &Value);
   // Called to handle objects interactions
   void Select(const FInputActionValue &Value);
   // Called to reload currently equipped weapon
@@ -115,7 +117,7 @@ protected:
 
   void FinishCrosshairBulletFire();
 
-  bool GetBeamEndLocation(const FVector &MuzzleSocketLocation, FVector &OutBeamLocation);
+  bool GetBeamEndLocation(const FVector &MuzzleSocketLocation, FHitResult &OutHitResult);
 
   void StartFireTimer();
 

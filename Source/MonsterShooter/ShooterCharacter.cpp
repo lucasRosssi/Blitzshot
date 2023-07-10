@@ -19,6 +19,7 @@
 #include "Components/BoxComponent.h"
 #include "Components/SphereComponent.h"
 #include "Ammo.h"
+#include "BulletHitInterface.h"
 
 // Sets default values
 AShooterCharacter::AShooterCharacter() : bAiming(false),
@@ -183,7 +184,8 @@ void AShooterCharacter::Aim(const FInputActionValue &Value)
 
   if (
       GetCharacterMovement()->IsFalling() ||
-      CombatState == ECombatState::ECS_Reloading)
+      CombatState == ECombatState::ECS_Reloading ||
+      CombatState == ECombatState::ECS_Equipping)
   {
     bAiming = false;
   }
@@ -200,8 +202,13 @@ void AShooterCharacter::Aim(const FInputActionValue &Value)
 
 void AShooterCharacter::FireButtonPressed(const FInputActionValue &Value)
 {
-  bFireButtonPressed = Value.Get<bool>();
+  bFireButtonPressed = true;
   FireWeapon();
+}
+
+void AShooterCharacter::FireButtonReleased(const FInputActionValue &Value)
+{
+  bFireButtonPressed = false;
 }
 
 void AShooterCharacter::Select(const FInputActionValue &Value)
@@ -322,8 +329,9 @@ void AShooterCharacter::FireWeapon()
 
 bool AShooterCharacter::GetBeamEndLocation(
     const FVector &MuzzleSocketLocation,
-    FVector &OutBeamLocation)
+    FHitResult &OutHitResult)
 {
+  FVector OutBeamLocation;
   // Check for crosshair trace hit
   FHitResult CrosshairHitResult;
   bool bCrosshairHit = TraceUnderCrosshair(CrosshairHitResult, OutBeamLocation);
@@ -339,23 +347,22 @@ bool AShooterCharacter::GetBeamEndLocation(
   }
 
   // Perform trace from gun barrel
-  FHitResult WeaponTraceHit;
   const FVector WeaponTraceStart{MuzzleSocketLocation};
   const FVector StartToEnd{OutBeamLocation - MuzzleSocketLocation};
   const FVector WeaponTraceEnd{MuzzleSocketLocation + StartToEnd * 1.25f};
   GetWorld()->LineTraceSingleByChannel(
-      WeaponTraceHit,
+      OutHitResult,
       WeaponTraceStart,
       WeaponTraceEnd,
       ECollisionChannel::ECC_Visibility);
 
-  if (WeaponTraceHit.bBlockingHit) // object between barrel and BeamEndPoint?
+  if (!OutHitResult.bBlockingHit) // object between barrel and BeamEndPoint?
   {
-    OutBeamLocation = WeaponTraceHit.Location;
-    return true;
+    OutHitResult.Location = OutBeamLocation;
+    return false;
   }
 
-  return false;
+  return true;
 }
 
 void AShooterCharacter::StartFireTimer()
@@ -375,9 +382,12 @@ void AShooterCharacter::AutoFireReset()
 {
   CombatState = ECombatState::ECS_Unoccupied;
 
+  if (!EquippedWeapon)
+    return;
+
   if (WeaponHasAmmo())
   {
-    if (bFireButtonPressed)
+    if (bFireButtonPressed && EquippedWeapon->GetAutomatic())
     {
       FireWeapon();
     }
@@ -751,20 +761,33 @@ void AShooterCharacter::SendBullet()
       UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), EquippedWeapon->GetMuzzleFlash(), SocketTransform);
     }
 
-    FVector BeamEnd;
+    FHitResult BeamHitResult;
     bool bBeamEnd = GetBeamEndLocation(
         SocketTransform.GetLocation(),
-        BeamEnd);
+        BeamHitResult);
 
     if (bBeamEnd)
     {
       // Spawn particles after updating correctly BeamEndPoint
-      if (ImpactParticles)
+      // Check if hit actor implement BulletHitInterface
+      if (BeamHitResult.GetActor())
       {
-        UGameplayStatics::SpawnEmitterAtLocation(
-            GetWorld(),
-            ImpactParticles,
-            BeamEnd);
+        IBulletHitInterface *BulletHitInterface = Cast<IBulletHitInterface>(BeamHitResult.GetActor());
+
+        if (BulletHitInterface)
+        {
+          BulletHitInterface->BulletHit_Implementation(BeamHitResult);
+        }
+        else if (ImpactParticles) // Default particles
+        {
+          UE_LOG(LogTemp, Display, TEXT("Impact particles"));
+          UGameplayStatics::SpawnEmitterAtLocation(
+              GetWorld(),
+              ImpactParticles,
+              BeamHitResult.Location,
+              FRotator(0.f),
+              true);
+        }
       }
 
       if (BeamParticles)
@@ -776,7 +799,7 @@ void AShooterCharacter::SendBullet()
 
         if (Beam)
         {
-          Beam->SetVectorParameter(FName("Target"), BeamEnd);
+          Beam->SetVectorParameter(FName("Target"), BeamHitResult.Location);
         }
       }
     }
@@ -789,13 +812,13 @@ void AShooterCharacter::PlayGunFireMontage()
   if (AnimInstance && HipFireMontage && !bAiming)
   {
     AnimInstance->Montage_Play(HipFireMontage);
-    AnimInstance->Montage_JumpToSection(FName("StartFire"));
+    AnimInstance->Montage_JumpToSection(EquippedWeapon->GetHipFireMontageSection());
   }
 
   if (AnimInstance && AimFireMontage && bAiming)
   {
     AnimInstance->Montage_Play(AimFireMontage);
-    AnimInstance->Montage_JumpToSection(FName("StartAimFire"));
+    AnimInstance->Montage_JumpToSection(EquippedWeapon->GetAimFireMontageSection());
   }
 }
 
@@ -966,13 +989,19 @@ void AShooterCharacter::SetupPlayerInputComponent(UInputComponent *PlayerInputCo
     EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AShooterCharacter::Move);
     EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AShooterCharacter::Look);
     EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AShooterCharacter::Jump);
-    EnhancedInputComponent->BindAction(FireWeaponAction, ETriggerEvent::Triggered, this, &AShooterCharacter::FireButtonPressed);
-    EnhancedInputComponent->BindAction(FireWeaponAction, ETriggerEvent::Completed, this, &AShooterCharacter::FireButtonPressed);
+
+    EnhancedInputComponent->BindAction(FireWeaponAction, ETriggerEvent::Started, this, &AShooterCharacter::FireButtonPressed);
+    EnhancedInputComponent->BindAction(FireWeaponAction, ETriggerEvent::Completed, this, &AShooterCharacter::FireButtonReleased);
+
     EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Triggered, this, &AShooterCharacter::Aim);
     EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &AShooterCharacter::Aim);
+
     EnhancedInputComponent->BindAction(SelectAction, ETriggerEvent::Started, this, &AShooterCharacter::Select);
+
     EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &AShooterCharacter::Reload);
+
     EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &AShooterCharacter::Crouch);
+
     EnhancedInputComponent->BindAction(SwitchWeapon1Action, ETriggerEvent::Started, this, &AShooterCharacter::SwitchWeapon1);
     EnhancedInputComponent->BindAction(SwitchWeapon2Action, ETriggerEvent::Started, this, &AShooterCharacter::SwitchWeapon2);
     EnhancedInputComponent->BindAction(SwitchWeapon3Action, ETriggerEvent::Started, this, &AShooterCharacter::SwitchWeapon3);
@@ -1011,6 +1040,11 @@ void AShooterCharacter::FinishReloading()
       CarriedAmmo -= MagEmptySpace;
       AmmoMap.Add(AmmoType, CarriedAmmo);
     }
+  }
+
+  if (bFireButtonPressed && EquippedWeapon->GetAutomatic())
+  {
+    FireWeapon();
   }
 }
 

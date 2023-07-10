@@ -70,6 +70,15 @@ struct FWeaponProperties : public FTableRowBase
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
   USoundCue *FireSound;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  FName AimFireMontageSection;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  FName HipFireMontageSection;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  bool bAutomatic;
 };
 
 /**
@@ -156,6 +165,15 @@ private:
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Data Table", meta = (AllowPrivateAccess = "true"))
   USoundCue *FireSound;
 
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Data Table", meta = (AllowPrivateAccess = "true"))
+  FName AimFireMontageSection;
+
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Data Table", meta = (AllowPrivateAccess = "true"))
+  FName HipFireMontageSection;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
+  bool bAutomatic;
+
 public:
   // Adds impulse to the thrown Weapon
   void ThrowWeapon();
@@ -172,6 +190,9 @@ public:
   FORCEINLINE float GetFireRate() const { return FireRate; }
   FORCEINLINE UParticleSystem *GetMuzzleFlash() const { return MuzzleFlash; }
   FORCEINLINE USoundCue *GetFireSound() const { return FireSound; }
+  FORCEINLINE FName GetAimFireMontageSection() const { return AimFireMontageSection; }
+  FORCEINLINE FName GetHipFireMontageSection() const { return HipFireMontageSection; }
+  FORCEINLINE bool GetAutomatic() const { return bAutomatic; }
 
   void ReloadAmmo(int32 Amount);
 

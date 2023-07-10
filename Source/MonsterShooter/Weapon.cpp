@@ -6,7 +6,8 @@ AWeapon::AWeapon() : ThrowWeaponTime(0.7f),
                      bFalling(false),
                      WeaponType(EWeaponType::EWT_SubmachineGun),
                      ReloadMontageSection(FName(TEXT("Reload SMG"))),
-                     ClipBoneName(TEXT("smg_clip"))
+                     ClipBoneName(TEXT("smg_clip")),
+                     bAutomatic(true)
 {
   PrimaryActorTick.bCanEverTick = true;
 }
@@ -59,6 +60,8 @@ void AWeapon::OnConstruction(const FTransform &Transform)
     case EWeaponType::EWT_AssaultRifle:
       WeaponDataRow = WeaponTableObject->FindRow<FWeaponProperties>(FName("AssaultRifle"), TEXT(""));
       break;
+    case EWeaponType::EWT_Pistol:
+      WeaponDataRow = WeaponTableObject->FindRow<FWeaponProperties>(FName("Pistol"), TEXT(""));
     }
 
     if (WeaponDataRow)
@@ -85,6 +88,9 @@ void AWeapon::OnConstruction(const FTransform &Transform)
       FireRate = WeaponDataRow->FireRate;
       MuzzleFlash = WeaponDataRow->MuzzleFlash;
       FireSound = WeaponDataRow->FireSound;
+      AimFireMontageSection = WeaponDataRow->AimFireMontageSection;
+      HipFireMontageSection = WeaponDataRow->HipFireMontageSection;
+      bAutomatic = WeaponDataRow->bAutomatic;
     }
 
     if (GetMaterialInstance())
