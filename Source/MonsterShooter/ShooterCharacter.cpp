@@ -20,6 +20,7 @@
 #include "Components/SphereComponent.h"
 #include "Ammo.h"
 #include "BulletHitInterface.h"
+#include "Enemy.h"
 
 // Sets default values
 AShooterCharacter::AShooterCharacter() : bAiming(false),
@@ -780,13 +781,23 @@ void AShooterCharacter::SendBullet()
         }
         else if (ImpactParticles) // Default particles
         {
-          UE_LOG(LogTemp, Display, TEXT("Impact particles"));
           UGameplayStatics::SpawnEmitterAtLocation(
               GetWorld(),
               ImpactParticles,
               BeamHitResult.Location,
               FRotator(0.f),
               true);
+        }
+
+        AEnemy *HitEnemy = Cast<AEnemy>(BeamHitResult.GetActor());
+        if (HitEnemy)
+        {
+          UGameplayStatics::ApplyDamage(
+              HitEnemy,
+              EquippedWeapon->GetDamage(),
+              GetController(),
+              EquippedWeapon,
+              UDamageType::StaticClass());
         }
       }
 

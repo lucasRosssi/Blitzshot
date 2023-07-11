@@ -79,6 +79,12 @@ struct FWeaponProperties : public FTableRowBase
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
   bool bAutomatic;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  float Damage;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  float WeakspotDamage;
 };
 
 /**
@@ -174,6 +180,14 @@ private:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
   bool bAutomatic;
 
+  /** Amount of damage caused by a bullet */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
+  float Damage;
+
+  /** Amount of damage when the bullet hits weakspots */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
+  float WeakspotDamage;
+
 public:
   // Adds impulse to the thrown Weapon
   void ThrowWeapon();
@@ -193,6 +207,8 @@ public:
   FORCEINLINE FName GetAimFireMontageSection() const { return AimFireMontageSection; }
   FORCEINLINE FName GetHipFireMontageSection() const { return HipFireMontageSection; }
   FORCEINLINE bool GetAutomatic() const { return bAutomatic; }
+  FORCEINLINE float GetDamage() const { return Damage; }
+  FORCEINLINE float GetWeakspotDamage() const { return WeakspotDamage; }
 
   void ReloadAmmo(int32 Amount);
 

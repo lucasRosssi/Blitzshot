@@ -91,6 +91,8 @@ void AWeapon::OnConstruction(const FTransform &Transform)
       AimFireMontageSection = WeaponDataRow->AimFireMontageSection;
       HipFireMontageSection = WeaponDataRow->HipFireMontageSection;
       bAutomatic = WeaponDataRow->bAutomatic;
+      Damage = WeaponDataRow->Damage;
+      WeakspotDamage = WeaponDataRow->WeakspotDamage;
     }
 
     if (GetMaterialInstance())
