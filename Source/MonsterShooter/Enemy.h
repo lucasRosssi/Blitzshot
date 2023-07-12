@@ -33,6 +33,12 @@ protected:
 
   void ResetHitReactTimer();
 
+  UFUNCTION(BlueprintCallable)
+  void StoreHitNumber(UUserWidget *HitNumber, FVector Location);
+
+  UFUNCTION(BlueprintCallable)
+  void DestroyHitNumber(UUserWidget *HitNumber, FVector Location);
+
 private:
   /** Particles to spawn when hit by bullets */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
@@ -73,6 +79,14 @@ private:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
   float HitReactTimeMax;
 
+  /** Map to store HitNumber widgets and their locations */
+  UPROPERTY(VisibleAnywhere, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+  TMap<UUserWidget *, FVector> HitNumbers;
+
+  /** Time before a hit number is removed from the screen */
+  UPROPERTY(EditAnywhere, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+  float HitNumberDestroyTime;
+
 public:
   // Called every frame
   virtual void Tick(float DeltaTime) override;
@@ -85,4 +99,7 @@ public:
   virtual float TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEvent, AController *EventInstigator, AActor *DamageCauser) override;
 
   FORCEINLINE FString GetWeakspotBone() const { return WeakspotBone; }
+
+  UFUNCTION(BlueprintImplementableEvent)
+  void ShowHitNumber(int32 Damage, FVector HitLocation, bool bWeakspot);
 };

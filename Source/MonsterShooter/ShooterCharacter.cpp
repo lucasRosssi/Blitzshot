@@ -792,26 +792,28 @@ void AShooterCharacter::SendBullet()
         AEnemy *HitEnemy = Cast<AEnemy>(BeamHitResult.GetActor());
         if (HitEnemy)
         {
+          int32 Damage{};
+          bool bWeakspot = false;
+
           if (BeamHitResult.BoneName.ToString() == HitEnemy->GetWeakspotBone())
           // Weakspot shot
           {
-            UGameplayStatics::ApplyDamage(
-                HitEnemy,
-                EquippedWeapon->GetWeakspotDamage(),
-                GetController(),
-                EquippedWeapon,
-                UDamageType::StaticClass());
+            Damage = EquippedWeapon->GetWeakspotDamage();
+            bWeakspot = true;
           }
           // Normal shot
           else
           {
-            UGameplayStatics::ApplyDamage(
-                HitEnemy,
-                EquippedWeapon->GetDamage(),
-                GetController(),
-                EquippedWeapon,
-                UDamageType::StaticClass());
+            Damage = EquippedWeapon->GetDamage();
           }
+          UGameplayStatics::ApplyDamage(
+              HitEnemy,
+              Damage,
+              GetController(),
+              EquippedWeapon,
+              UDamageType::StaticClass());
+
+          HitEnemy->ShowHitNumber(Damage, BeamHitResult.Location, bWeakspot);
         }
       }
 

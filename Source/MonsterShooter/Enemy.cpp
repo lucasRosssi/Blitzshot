@@ -4,6 +4,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Sound/SoundCue.h"
+#include "Blueprint/UserWidget.h"
 
 // Sets default values
 AEnemy::AEnemy() : Health(100.f),
@@ -11,7 +12,8 @@ AEnemy::AEnemy() : Health(100.f),
                    HealthBarDisplayTime(4.f),
                    bCanHitReact(true),
                    HitReactTimeMin(0.1f),
-                   HitReactTimeMax(0.5f)
+                   HitReactTimeMax(0.5f),
+                   HitNumberDestroyTime(1.5f)
 {
   // Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
   PrimaryActorTick.bCanEverTick = true;
@@ -65,6 +67,26 @@ void AEnemy::PlayHitMontage(FName Section, float PlayRate)
 void AEnemy::ResetHitReactTimer()
 {
   bCanHitReact = true;
+}
+
+void AEnemy::StoreHitNumber(UUserWidget *HitNumber, FVector Location)
+{
+  HitNumbers.Add(HitNumber, Location);
+
+  FTimerHandle HitNumberTimer;
+  FTimerDelegate HitNumberDelegate;
+  HitNumberDelegate.BindUFunction(this, FName("DestroyHitNumber"), HitNumber);
+  GetWorld()->GetTimerManager().SetTimer(
+      HitNumberTimer,
+      HitNumberDelegate,
+      HitNumberDestroyTime,
+      false);
+}
+
+void AEnemy::DestroyHitNumber(UUserWidget *HitNumber, FVector Location)
+{
+  HitNumbers.Remove(HitNumber);
+  // HitNumber->RemoveFromParent();
 }
 
 // Called every frame
