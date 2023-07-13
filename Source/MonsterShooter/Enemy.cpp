@@ -5,6 +5,7 @@
 #include "Particles/ParticleSystemComponent.h"
 #include "Sound/SoundCue.h"
 #include "Blueprint/UserWidget.h"
+#include "Kismet/KismetMathLibrary.h"
 
 // Sets default values
 AEnemy::AEnemy() : Health(100.f),
@@ -25,6 +26,10 @@ void AEnemy::BeginPlay()
   Super::BeginPlay();
 
   GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+
+  FVector WorldPatrolPoint = UKismetMathLibrary::TransformLocation(
+      GetActorTransform(),
+      PatrolPoint);
 }
 
 void AEnemy::ShowHealthBar_Implementation()

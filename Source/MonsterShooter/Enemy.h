@@ -87,6 +87,14 @@ private:
   UPROPERTY(EditAnywhere, Category = "Combat", meta = (AllowPrivateAccess = "true"))
   float HitNumberDestroyTime;
 
+  /** Behavior tree for the AI Character */
+  UPROPERTY(EditAnywhere, Category = "AI", meta = (AllowPrivateAccess = "true"))
+  class UBehaviorTree *BehaviorTree;
+
+  /** Point for the enemy to move to */
+  UPROPERTY(EditAnywhere, Category = "AI", meta = (AllowPrivateAccess = "true", MakeEditWidget = "true"))
+  FVector PatrolPoint;
+
 public:
   // Called every frame
   virtual void Tick(float DeltaTime) override;
@@ -102,4 +110,6 @@ public:
 
   UFUNCTION(BlueprintImplementableEvent)
   void ShowHitNumber(int32 Damage, FVector HitLocation, bool bWeakspot);
+
+  FORCEINLINE UBehaviorTree *GetBehaviorTree() const { return BehaviorTree; }
 };
