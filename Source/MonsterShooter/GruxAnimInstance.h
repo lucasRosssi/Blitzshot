@@ -7,11 +7,23 @@
 #include "GruxAnimInstance.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class MONSTERSHOOTER_API UGruxAnimInstance : public UAnimInstance
 {
-	GENERATED_BODY()
-	
+  GENERATED_BODY()
+
+public:
+  UFUNCTION(BlueprintCallable)
+  void UpdateAnimationProperties(float DeltaTime);
+
+private:
+  /** Lateral movement speed */
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+  float Speed;
+
+  /** Reference to the Enemy */
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+  class AEnemy *Enemy;
 };

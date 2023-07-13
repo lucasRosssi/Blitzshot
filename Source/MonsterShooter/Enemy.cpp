@@ -6,6 +6,8 @@
 #include "Sound/SoundCue.h"
 #include "Blueprint/UserWidget.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "EnemyController.h"
+#include "BehaviorTree/BlackboardComponent.h"
 
 // Sets default values
 AEnemy::AEnemy() : Health(100.f),
@@ -27,9 +29,19 @@ void AEnemy::BeginPlay()
 
   GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 
-  FVector WorldPatrolPoint = UKismetMathLibrary::TransformLocation(
+  // Get the AI controller
+  EnemyController = Cast<AEnemyController>(GetController());
+
+  const FVector WorldPatrolPoint = UKismetMathLibrary::TransformLocation(
       GetActorTransform(),
       PatrolPoint);
+
+  if (EnemyController)
+  {
+    EnemyController->GetBlackboardComponent()->SetValueAsVector(TEXT("PatrolPoint"), WorldPatrolPoint);
+
+    EnemyController->RunBehaviorTree(BehaviorTree);
+  }
 }
 
 void AEnemy::ShowHealthBar_Implementation()
