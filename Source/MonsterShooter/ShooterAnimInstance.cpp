@@ -144,9 +144,9 @@ void UShooterAnimInstance::TurnInPlace()
       }
 
       const float ABSRootYawOffset{FMath::Abs(RootYawOffset)};
-      if (ABSRootYawOffset > 90.f)
+      if (ABSRootYawOffset > 60.f)
       {
-        const float YawExcess{ABSRootYawOffset - 90.f};
+        const float YawExcess{ABSRootYawOffset - 60.f};
         RootYawOffset > 0 ? RootYawOffset -= YawExcess : RootYawOffset += YawExcess;
       }
     }
@@ -179,5 +179,5 @@ void UShooterAnimInstance::Lean(float DeltaTime)
 
   const float Target = Delta.Yaw / DeltaTime;
   const float Interp{FMath::FInterpTo(YawDelta, Target, DeltaTime, 6.f)};
-  YawDelta = FMath::Clamp(Interp, -90.f, 90.f);
+  YawDelta = FMath::Clamp(Interp, -60.f, 60.f);
 }
