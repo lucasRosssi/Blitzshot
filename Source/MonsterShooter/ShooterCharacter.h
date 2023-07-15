@@ -186,6 +186,8 @@ protected:
   UFUNCTION(BlueprintCallable)
   void FinishEquipping();
 
+  void TriggerRecoil();
+
 public:
   // Called every frame
   virtual void Tick(float DeltaTime) override;
@@ -409,8 +411,6 @@ private:
   /** Variable used to recover from recoil */
   float VerticalRecoilRecovery;
   float HorizontalRecoilRecovery;
-  /** Vertical value, indicating the point where the aim was at when the weapon was fired */
-  float VerticalAimPoint;
 
 public:
   // Returns CameraBoom subobject

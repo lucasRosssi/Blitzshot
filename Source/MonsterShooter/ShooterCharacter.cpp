@@ -324,14 +324,9 @@ void AShooterCharacter::FireWeapon()
   PlayFireSound();
   SendBullet();
   PlayGunFireMontage();
+  TriggerRecoil();
   StartCrosshairBulletFire();
   EquippedWeapon->ConsumeAmmo();
-
-  // Trigger recoil
-  float RecoilFactor = (100.0f - EquippedWeapon->GetStability()) / 100.0f;
-  VerticalAimPoint = VerticalRecoil;
-  VerticalRecoil = -RecoilAmount * RecoilFactor;
-  HorizontalRecoil = FMath::RandRange(-RecoilAmount / 3, RecoilAmount / 3) * RecoilFactor;
 
   StartFireTimer();
 }
@@ -582,8 +577,19 @@ bool AShooterCharacter::TraceUnderCrosshair(FHitResult &OutHitResult, FVector &O
   FVector2D FinalLocation = CrosshairLocation;
   if (bShooting)
   {
-    WeaponAccuracySpread = FMath::RandPointInCircle(
-        60.f * ((100.0f - EquippedWeapon->GetAccuracy()) / 100.0f));
+    float const BulletSpreadFactor = (100.0f - EquippedWeapon->GetAccuracy()) / 100.0f;
+
+    if (bAiming)
+    {
+      WeaponAccuracySpread = FMath::RandPointInCircle(
+          60.f * (BulletSpreadFactor));
+    }
+    else
+    {
+      WeaponAccuracySpread = FMath::RandPointInCircle(
+          60.f * BulletSpreadFactor *
+          2.0f);
+    }
     FinalLocation = CrosshairLocation + WeaponAccuracySpread;
   }
 
@@ -618,17 +624,20 @@ bool AShooterCharacter::TraceUnderCrosshair(FHitResult &OutHitResult, FVector &O
 
 void AShooterCharacter::ApplyRecoil(float DeltaTime)
 {
+  if (!VerticalRecoil && !HorizontalRecoil)
+    return;
+
   float ApplyPitch;
   float ApplyYaw;
 
   VerticalRecoil = FMath::FInterpTo(
       VerticalRecoil,
-      VerticalAimPoint,
+      0,
       DeltaTime,
       RecoilCameraSpeed);
   VerticalRecoilRecovery = FMath::FInterpTo(
       VerticalRecoilRecovery,
-      -VerticalAimPoint,
+      -VerticalRecoil,
       DeltaTime,
       RecoilCameraSpeed * 2);
 
@@ -1045,6 +1054,22 @@ void AShooterCharacter::GrabWeapon()
 void AShooterCharacter::FinishEquipping()
 {
   CombatState = ECombatState::ECS_Unoccupied;
+}
+
+void AShooterCharacter::TriggerRecoil()
+{
+  float const RecoilFactor = (100.0f - EquippedWeapon->GetStability()) / 100.0f;
+
+  if (bAiming)
+  {
+    VerticalRecoil = -RecoilAmount * RecoilFactor;
+    HorizontalRecoil = FMath::RandRange(-RecoilAmount / 4, RecoilAmount / 4) * RecoilFactor;
+  }
+  else
+  {
+    VerticalRecoil = -RecoilAmount * RecoilFactor * 2.0f;
+    HorizontalRecoil = FMath::RandRange(-RecoilAmount / 4, RecoilAmount / 4) * RecoilFactor * 1.5f;
+  }
 }
 
 // Called every frame
