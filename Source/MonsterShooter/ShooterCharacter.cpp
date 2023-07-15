@@ -64,7 +64,9 @@ AShooterCharacter::AShooterCharacter() : bAiming(false),
                                          bShouldPlayPickupSound(true),
                                          bShouldPlayEquipSound(true),
                                          PickupSoundResetTime(0.2f),
-                                         EquipSoundResetTime(0.2f)
+                                         EquipSoundResetTime(0.2f),
+                                         RecoilCameraSpeed(5.f),
+                                         RecoilAmount(0.8f)
 {
   // Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
   PrimaryActorTick.bCanEverTick = true;
@@ -325,6 +327,12 @@ void AShooterCharacter::FireWeapon()
   StartCrosshairBulletFire();
   EquippedWeapon->ConsumeAmmo();
 
+  // Trigger recoil
+  float RecoilFactor = (100.0f - EquippedWeapon->GetStability()) / 100.0f;
+  VerticalAimPoint = VerticalRecoil;
+  VerticalRecoil = -RecoilAmount * RecoilFactor;
+  HorizontalRecoil = FMath::RandRange(-RecoilAmount / 3, RecoilAmount / 3) * RecoilFactor;
+
   StartFireTimer();
 }
 
@@ -335,7 +343,7 @@ bool AShooterCharacter::GetBeamEndLocation(
   FVector OutBeamLocation;
   // Check for crosshair trace hit
   FHitResult CrosshairHitResult;
-  bool bCrosshairHit = TraceUnderCrosshair(CrosshairHitResult, OutBeamLocation);
+  bool bCrosshairHit = TraceUnderCrosshair(CrosshairHitResult, OutBeamLocation, true);
 
   if (bCrosshairHit)
   {
@@ -557,7 +565,7 @@ void AShooterCharacter::FinishCrosshairBulletFire()
   bFiringBullet = false;
 }
 
-bool AShooterCharacter::TraceUnderCrosshair(FHitResult &OutHitResult, FVector &OutHitLocation)
+bool AShooterCharacter::TraceUnderCrosshair(FHitResult &OutHitResult, FVector &OutHitLocation, bool bShooting)
 {
   // Get Viewport size
   FVector2D ViewportSize;
@@ -570,11 +578,19 @@ bool AShooterCharacter::TraceUnderCrosshair(FHitResult &OutHitResult, FVector &O
   FVector2D CrosshairLocation(ViewportSize.X / 2.f, ViewportSize.Y / 2.f);
   FVector CrosshairWorldPosition;
   FVector CrosshairWorldDirection;
+  FVector2D WeaponAccuracySpread;
+  FVector2D FinalLocation = CrosshairLocation;
+  if (bShooting)
+  {
+    WeaponAccuracySpread = FMath::RandPointInCircle(
+        60.f * ((100.0f - EquippedWeapon->GetAccuracy()) / 100.0f));
+    FinalLocation = CrosshairLocation + WeaponAccuracySpread;
+  }
 
   // Get world position and direction of crosshair
   bool bScreenToWorld = UGameplayStatics::DeprojectScreenToWorld(
       UGameplayStatics::GetPlayerController(this, 0),
-      CrosshairLocation,
+      FinalLocation,
       CrosshairWorldPosition,
       CrosshairWorldDirection);
 
@@ -598,6 +614,42 @@ bool AShooterCharacter::TraceUnderCrosshair(FHitResult &OutHitResult, FVector &O
   }
 
   return false;
+}
+
+void AShooterCharacter::ApplyRecoil(float DeltaTime)
+{
+  float ApplyPitch;
+  float ApplyYaw;
+
+  VerticalRecoil = FMath::FInterpTo(
+      VerticalRecoil,
+      VerticalAimPoint,
+      DeltaTime,
+      RecoilCameraSpeed);
+  VerticalRecoilRecovery = FMath::FInterpTo(
+      VerticalRecoilRecovery,
+      -VerticalAimPoint,
+      DeltaTime,
+      RecoilCameraSpeed * 2);
+
+  HorizontalRecoil = FMath::FInterpTo(
+      HorizontalRecoil,
+      0,
+      DeltaTime,
+      RecoilCameraSpeed);
+  HorizontalRecoilRecovery = FMath::FInterpTo(
+      HorizontalRecoilRecovery,
+      -HorizontalRecoil,
+      DeltaTime,
+      RecoilCameraSpeed * 2);
+
+  ApplyPitch = VerticalRecoil + VerticalRecoilRecovery;
+  ApplyYaw = HorizontalRecoil + HorizontalRecoilRecovery;
+
+  if (ApplyPitch)
+    AddControllerPitchInput(ApplyPitch);
+  if (ApplyYaw)
+    AddControllerYawInput(ApplyYaw);
 }
 
 void AShooterCharacter::IncrementOverlappedItemCount(int8 Amount)
@@ -817,11 +869,11 @@ void AShooterCharacter::SendBullet()
         }
       }
 
-      if (BeamParticles)
+      if (EquippedWeapon->GetBeamParticles())
       {
         UParticleSystemComponent *Beam = UGameplayStatics::SpawnEmitterAtLocation(
             GetWorld(),
-            BeamParticles,
+            EquippedWeapon->GetBeamParticles(),
             SocketTransform);
 
         if (Beam)
@@ -1004,6 +1056,7 @@ void AShooterCharacter::Tick(float DeltaTime)
   SetLookRate();
   CalculateCrosshairSpread(DeltaTime);
   TraceForItems();
+  ApplyRecoil(DeltaTime);
 }
 
 // Called to bind functionality to input

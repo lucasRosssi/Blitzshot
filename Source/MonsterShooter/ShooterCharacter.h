@@ -124,7 +124,9 @@ protected:
   UFUNCTION()
   void AutoFireReset();
 
-  bool TraceUnderCrosshair(FHitResult &OutHitResult, FVector &OutHitLocation);
+  bool TraceUnderCrosshair(FHitResult &OutHitResult, FVector &OutHitLocation, bool bShooting = false);
+
+  void ApplyRecoil(float DeltaTime);
 
   /** Trace for items if OverlappedItemCount >= 0 */
   void TraceForItems();
@@ -207,10 +209,6 @@ private:
   // Particles spawned upon bullet impact
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
   UParticleSystem *ImpactParticles;
-
-  // Smoke trail for bullets
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
-  UParticleSystem *BeamParticles;
 
   // Whether the character is aiming or not
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
@@ -398,6 +396,21 @@ private:
   /** Delegate for sending slot information to inventory bar when equipping */
   UPROPERTY(BlueprintAssignable, Category = Delegates, meta = (AllowPrivateAccess = "true"))
   FEquipItemDelegate EquipItemDelegate;
+
+  /** Speed at which the camera recoils */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Recoil, meta = (AllowPrivateAccess = "true"))
+  float RecoilCameraSpeed;
+  /** Amount of rotation from the recoil */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Recoil, meta = (AllowPrivateAccess = "true"))
+  float RecoilAmount;
+  /** Variable used to trigger the recoil. Assigning a negative value will apply it. */
+  float VerticalRecoil;
+  float HorizontalRecoil;
+  /** Variable used to recover from recoil */
+  float VerticalRecoilRecovery;
+  float HorizontalRecoilRecovery;
+  /** Vertical value, indicating the point where the aim was at when the weapon was fired */
+  float VerticalAimPoint;
 
 public:
   // Returns CameraBoom subobject

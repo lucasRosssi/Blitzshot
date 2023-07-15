@@ -85,6 +85,15 @@ struct FWeaponProperties : public FTableRowBase
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
   float WeakspotDamage;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  float Accuracy;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UParticleSystem *BeamParticles;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  float Stability;
 };
 
 /**
@@ -177,16 +186,27 @@ private:
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Data Table", meta = (AllowPrivateAccess = "true"))
   FName HipFireMontageSection;
 
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data Table", meta = (AllowPrivateAccess = "true"))
   bool bAutomatic;
 
   /** Amount of damage caused by a bullet */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data Table", meta = (AllowPrivateAccess = "true"))
   float Damage;
 
   /** Amount of damage when the bullet hits weakspots */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data Table", meta = (AllowPrivateAccess = "true"))
   float WeakspotDamage;
+
+  /** Amount of damage when the bullet hits weakspots */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data Table", meta = (AllowPrivateAccess = "true"))
+  float Accuracy;
+
+  // Bullet trail
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data Table", meta = (AllowPrivateAccess = "true"))
+  UParticleSystem *BeamParticles;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data Table", meta = (AllowPrivateAccess = "true"))
+  float Stability;
 
 public:
   // Adds impulse to the thrown Weapon
@@ -209,6 +229,9 @@ public:
   FORCEINLINE bool GetAutomatic() const { return bAutomatic; }
   FORCEINLINE float GetDamage() const { return Damage; }
   FORCEINLINE float GetWeakspotDamage() const { return WeakspotDamage; }
+  FORCEINLINE float GetAccuracy() const { return Accuracy; }
+  FORCEINLINE UParticleSystem *GetBeamParticles() const { return BeamParticles; }
+  FORCEINLINE float GetStability() const { return Stability; }
 
   void ReloadAmmo(int32 Amount);
 
