@@ -8,6 +8,8 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "EnemyController.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Components/SphereComponent.h"
+#include "ShooterCharacter.h"
 
 // Sets default values
 AEnemy::AEnemy() : Health(100.f),
@@ -16,10 +18,17 @@ AEnemy::AEnemy() : Health(100.f),
                    bCanHitReact(true),
                    HitReactTimeMin(0.1f),
                    HitReactTimeMax(0.5f),
-                   HitNumberDestroyTime(1.5f)
+                   HitNumberDestroyTime(1.5f),
+                   bStunned(false),
+                   Balance(100.f),
+                   MaxBalance(100.f),
+                   BalanceRecoveryRate(25.f)
 {
   // Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
   PrimaryActorTick.bCanEverTick = true;
+
+  AgroSphere = CreateDefaultSubobject<USphereComponent>(TEXT("AgroSphere"));
+  AgroSphere->SetupAttachment(GetRootComponent());
 }
 
 // Called when the game starts or when spawned
@@ -27,18 +36,26 @@ void AEnemy::BeginPlay()
 {
   Super::BeginPlay();
 
+  AgroSphere->OnComponentBeginOverlap.AddDynamic(
+      this,
+      &AEnemy::AgroSphereOverlap);
+
   GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 
   // Get the AI controller
   EnemyController = Cast<AEnemyController>(GetController());
 
-  const FVector WorldPatrolPoint = UKismetMathLibrary::TransformLocation(
+  const FVector WorldPatrolPoint1 = UKismetMathLibrary::TransformLocation(
       GetActorTransform(),
-      PatrolPoint);
+      PatrolPoint1);
+  const FVector WorldPatrolPoint2 = UKismetMathLibrary::TransformLocation(
+      GetActorTransform(),
+      PatrolPoint2);
 
   if (EnemyController)
   {
-    EnemyController->GetBlackboardComponent()->SetValueAsVector(TEXT("PatrolPoint"), WorldPatrolPoint);
+    EnemyController->GetBlackboardComponent()->SetValueAsVector(TEXT("PatrolPoint1"), WorldPatrolPoint1);
+    EnemyController->GetBlackboardComponent()->SetValueAsVector(TEXT("PatrolPoint2"), WorldPatrolPoint2);
 
     EnemyController->RunBehaviorTree(BehaviorTree);
   }
@@ -106,6 +123,36 @@ void AEnemy::DestroyHitNumber(UUserWidget *HitNumber, FVector Location)
   // HitNumber->RemoveFromParent();
 }
 
+void AEnemy::AgroSphereOverlap(
+    UPrimitiveComponent *OverlappedComponent,
+    AActor *OtherActor,
+    UPrimitiveComponent *OtherComp,
+    int32 OtherBodyIndex,
+    bool bFromSweep,
+    const FHitResult &SweepResult)
+{
+  if (!OtherActor)
+    return;
+
+  auto Character = Cast<AShooterCharacter>(OtherActor);
+  if (Character)
+  {
+    // Set the value of Target Blackboard Key
+    EnemyController->GetBlackboardComponent()->SetValueAsObject(TEXT("Target"), Character);
+  }
+}
+
+void AEnemy::SetStunned(bool Stunned)
+{
+  bStunned = Stunned;
+  if (EnemyController)
+  {
+    EnemyController->GetBlackboardComponent()->SetValueAsBool(
+        TEXT("Stunned"),
+        Stunned);
+  }
+}
+
 // Called every frame
 void AEnemy::Tick(float DeltaTime)
 {
@@ -131,7 +178,15 @@ void AEnemy::BulletHit_Implementation(FHitResult HitResult)
   }
 
   ShowHealthBar();
-  PlayHitMontage(FName("HitReactFront"), 1.5f);
+  if (bStunned)
+    return;
+
+  if (Balance <= 0)
+  {
+    SetStunned(true);
+    PlayHitMontage(FName("HitReactFront"), 0.75f);
+    Balance = MaxBalance;
+  }
 }
 
 float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEvent, AController *EventInstigator, AActor *DamageCauser)
@@ -147,4 +202,12 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEv
   }
 
   return DamageAmount;
+}
+
+void AEnemy::TakeBalanceDamage(float Amount)
+{
+  if (bStunned)
+    return;
+
+  Balance -= Amount;
 }

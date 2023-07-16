@@ -94,6 +94,9 @@ struct FWeaponProperties : public FTableRowBase
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
   float Stability;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  float BalanceDamage;
 };
 
 /**
@@ -197,7 +200,7 @@ private:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data Table", meta = (AllowPrivateAccess = "true"))
   float WeakspotDamage;
 
-  /** Amount of damage when the bullet hits weakspots */
+  /** How precise is each shot related to the aim point. Higher values makes the shot closer to the center, up to exactly at the center at 100.f. */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data Table", meta = (AllowPrivateAccess = "true"))
   float Accuracy;
 
@@ -205,8 +208,13 @@ private:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data Table", meta = (AllowPrivateAccess = "true"))
   UParticleSystem *BeamParticles;
 
+  /** How much aim stability the weapon provides. Higher values makes the aim move less, up to no movement at 100.f */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data Table", meta = (AllowPrivateAccess = "true"))
   float Stability;
+
+  /** How much balance bar damage each shot does */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data Table", meta = (AllowPrivateAccess = "true"))
+  float BalanceDamage;
 
 public:
   // Adds impulse to the thrown Weapon
@@ -232,6 +240,7 @@ public:
   FORCEINLINE float GetAccuracy() const { return Accuracy; }
   FORCEINLINE UParticleSystem *GetBeamParticles() const { return BeamParticles; }
   FORCEINLINE float GetStability() const { return Stability; }
+  FORCEINLINE float GetBalanceDamage() const { return BalanceDamage; }
 
   void ReloadAmmo(int32 Amount);
 

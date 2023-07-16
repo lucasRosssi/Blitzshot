@@ -15,6 +15,7 @@ enum class ECombatState : uint8
   ECS_FireTimerInProgress UMETA(DisplayName = "FireTimerInProgress"),
   ECS_Reloading UMETA(DisplayName = "Reloading"),
   ECS_Equipping UMETA(DisplayName = "Equipping"),
+  ECS_Sprinting UMETA(DisplayName = "Sprinting"),
 
   ECS_MAX UMETA(DisplayName = "DefaultMAX")
 };
@@ -68,6 +69,8 @@ protected:
   void Reload(const FInputActionValue &Value);
   // Called to handle crouching
   void Crouch(const FInputActionValue &Value);
+  // Called to handle sprinting
+  void Sprint(const FInputActionValue &Value);
 
   void SwitchWeapon1(const FInputActionValue &Value);
   void SwitchWeapon2(const FInputActionValue &Value);
@@ -94,6 +97,8 @@ protected:
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
   UInputAction *CrouchAction;
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction *SprintAction;
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
   UInputAction *SwitchWeapon1Action;
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
   UInputAction *SwitchWeapon2Action;
@@ -104,6 +109,7 @@ protected:
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
   UInputAction *NextWeaponAction;
 
+  void EndSprint();
   // Interpolates camera zoom when aiming
   void CameraInterpZoom(float DeltaTime);
   // Set look sensitivity based on aiming

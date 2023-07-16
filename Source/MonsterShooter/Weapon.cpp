@@ -96,6 +96,7 @@ void AWeapon::OnConstruction(const FTransform &Transform)
       Accuracy = WeaponDataRow->Accuracy;
       BeamParticles = WeaponDataRow->BeamParticles;
       Stability = WeaponDataRow->Stability;
+      BalanceDamage = WeaponDataRow->BalanceDamage;
     }
 
     if (GetMaterialInstance())

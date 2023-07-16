@@ -152,6 +152,11 @@ void AShooterCharacter::Move(const FInputActionValue &Value)
 {
   const FVector2D MovementVector = Value.Get<FVector2D>();
 
+  if (CombatState == ECombatState::ECS_Sprinting && MovementVector.Y < 0.5f)
+  {
+    EndSprint();
+  }
+
   if (!GetController())
   {
     return;
@@ -164,7 +169,14 @@ void AShooterCharacter::Move(const FInputActionValue &Value)
   AddMovementInput(ForwardDirection, MovementVector.Y);
 
   const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-  AddMovementInput(RightDirection, MovementVector.X);
+  if (CombatState != ECombatState::ECS_Sprinting)
+  {
+    AddMovementInput(RightDirection, MovementVector.X);
+  }
+  else
+  {
+    AddMovementInput(RightDirection, MovementVector.X / 4);
+  }
 }
 
 void AShooterCharacter::Look(const FInputActionValue &Value)
@@ -172,7 +184,14 @@ void AShooterCharacter::Look(const FInputActionValue &Value)
   const FVector2D LookAxisVector = Value.Get<FVector2D>();
 
   AddControllerPitchInput(LookAxisVector.Y * BaseLookRate);
-  AddControllerYawInput(LookAxisVector.X * BaseLookRate);
+  if (CombatState == ECombatState::ECS_Sprinting)
+  {
+    AddControllerYawInput(FMath::Clamp(LookAxisVector.X, -0.5f, 0.5f) * BaseLookRate);
+  }
+  else
+  {
+    AddControllerYawInput(LookAxisVector.X * BaseLookRate);
+  }
 }
 
 void AShooterCharacter::Jump(const FInputActionValue &Value)
@@ -183,6 +202,9 @@ void AShooterCharacter::Jump(const FInputActionValue &Value)
 
 void AShooterCharacter::Aim(const FInputActionValue &Value)
 {
+  if (CombatState == ECombatState::ECS_Sprinting)
+    return;
+
   bAiming = Value.Get<bool>();
 
   if (
@@ -241,6 +263,25 @@ void AShooterCharacter::Crouch(const FInputActionValue &Value)
   }
 
   bCrouching = !bCrouching;
+}
+
+void AShooterCharacter::Sprint(const FInputActionValue &Value)
+{
+  if (GetCharacterMovement()->IsFalling())
+    return;
+
+  if (CombatState != ECombatState::ECS_Sprinting)
+  {
+    CombatState = ECombatState::ECS_Sprinting;
+
+    GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed * 1.5f;
+  }
+  else
+  {
+    CombatState = ECombatState::ECS_Unoccupied;
+
+    GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
+  }
 }
 
 void AShooterCharacter::SwitchWeapon1(const FInputActionValue &Value)
@@ -309,6 +350,12 @@ void AShooterCharacter::NextWeapon(const FInputActionValue &Value)
 }
 
 /* END INPUT ACTIONS */
+
+void AShooterCharacter::EndSprint()
+{
+  CombatState = ECombatState::ECS_Unoccupied;
+  GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
+}
 
 void AShooterCharacter::FireWeapon()
 {
@@ -582,12 +629,12 @@ bool AShooterCharacter::TraceUnderCrosshair(FHitResult &OutHitResult, FVector &O
     if (bAiming)
     {
       WeaponAccuracySpread = FMath::RandPointInCircle(
-          60.f * (BulletSpreadFactor));
+          80.f * (BulletSpreadFactor));
     }
     else
     {
       WeaponAccuracySpread = FMath::RandPointInCircle(
-          60.f * BulletSpreadFactor *
+          80.f * BulletSpreadFactor *
           2.0f);
     }
     FinalLocation = CrosshairLocation + WeaponAccuracySpread;
@@ -875,6 +922,7 @@ void AShooterCharacter::SendBullet()
               UDamageType::StaticClass());
 
           HitEnemy->ShowHitNumber(Damage, BeamHitResult.Location, bWeakspot);
+          HitEnemy->TakeBalanceDamage(EquippedWeapon->GetBalanceDamage());
         }
       }
 
@@ -1092,8 +1140,10 @@ void AShooterCharacter::SetupPlayerInputComponent(UInputComponent *PlayerInputCo
   if (UEnhancedInputComponent *EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
   {
     EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AShooterCharacter::Move);
+    EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &AShooterCharacter::EndSprint);
     EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AShooterCharacter::Look);
     EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AShooterCharacter::Jump);
+    EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &AShooterCharacter::Sprint);
 
     EnhancedInputComponent->BindAction(FireWeaponAction, ETriggerEvent::Started, this, &AShooterCharacter::FireButtonPressed);
     EnhancedInputComponent->BindAction(FireWeaponAction, ETriggerEvent::Completed, this, &AShooterCharacter::FireButtonReleased);

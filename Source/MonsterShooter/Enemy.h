@@ -39,6 +39,19 @@ protected:
   UFUNCTION(BlueprintCallable)
   void DestroyHitNumber(UUserWidget *HitNumber, FVector Location);
 
+  /** Called when something overlaps with the agro sphere */
+  UFUNCTION()
+  void AgroSphereOverlap(
+      UPrimitiveComponent *OverlappedComponent,
+      AActor *OtherActor,
+      UPrimitiveComponent *OtherComp,
+      int32 OtherBodyIndex,
+      bool bFromSweep,
+      const FHitResult &SweepResult);
+
+  UFUNCTION(BlueprintCallable)
+  void SetStunned(bool Stunned);
+
 private:
   /** Particles to spawn when hit by bullets */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
@@ -93,9 +106,33 @@ private:
 
   /** Point for the enemy to move to */
   UPROPERTY(EditAnywhere, Category = "AI", meta = (AllowPrivateAccess = "true", MakeEditWidget = "true"))
-  FVector PatrolPoint;
+  FVector PatrolPoint1;
+
+  /** Point for the enemy to move to */
+  UPROPERTY(EditAnywhere, Category = "AI", meta = (AllowPrivateAccess = "true", MakeEditWidget = "true"))
+  FVector PatrolPoint2;
 
   class AEnemyController *EnemyController;
+
+  /** Overlap sphere for when the enemy becomes hostile */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true", MakeEditWidget = "true"))
+  class USphereComponent *AgroSphere;
+
+  /** Whether the enemy is stunned */
+  UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true", MakeEditWidget = "true"))
+  bool bStunned;
+
+  /** Current balance value. When it reaches zero, the enemy gets stunned */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true", MakeEditWidget = "true"))
+  float Balance;
+
+  /** Maximum balance capacity */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true", MakeEditWidget = "true"))
+  float MaxBalance;
+
+  /** Rate at which the balance bar is recovered */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true", MakeEditWidget = "true"))
+  float BalanceRecoveryRate;
 
 public:
   // Called every frame
@@ -107,6 +144,8 @@ public:
   virtual void BulletHit_Implementation(FHitResult HitResult) override;
 
   virtual float TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEvent, AController *EventInstigator, AActor *DamageCauser) override;
+
+  void TakeBalanceDamage(float Amount);
 
   FORCEINLINE FString GetWeakspotBone() const { return WeakspotBone; }
 
