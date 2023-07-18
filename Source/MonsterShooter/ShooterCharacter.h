@@ -209,7 +209,7 @@ protected:
 
   int32 GetMovementInputDirection(int32 InputX, int32 InputY);
 
-  void PlayDodgeAnimation(int32 MovementX, int32 MovementY);
+  void PlayDodgeAnimation(int32 Direction);
 
 public:
   // Called every frame
@@ -446,9 +446,13 @@ private:
   UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
   bool bCanDodge;
 
+  /** Timer that handles the character being able to dodge again */
   FTimerHandle DodgeTimer;
   void StartDodgeTimer();
   void ResetDodgeTimer();
+
+  int32 MovementInputX;
+  int32 MovementInputY;
 
 public:
   // Returns CameraBoom subobject

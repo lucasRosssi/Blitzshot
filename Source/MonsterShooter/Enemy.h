@@ -54,6 +54,25 @@ protected:
   UFUNCTION(BlueprintCallable)
   void SetStaggered(bool Staggered);
 
+  UFUNCTION()
+  void CombatRangeOverlap(
+      UPrimitiveComponent *OverlappedComponent,
+      AActor *OtherActor,
+      UPrimitiveComponent *OtherComp,
+      int32 OtherBodyIndex,
+      bool bFromSweep,
+      const FHitResult &SweepResult);
+
+  UFUNCTION()
+  void CombatRangeEndOverlap(
+      UPrimitiveComponent *OverlappedComponent,
+      AActor *OtherActor,
+      UPrimitiveComponent *OtherComp,
+      int32 OtherBodyIndex);
+
+  UFUNCTION(BlueprintCallable)
+  void AttackPlayer(FName MontageSection);
+
 private:
   /** Particles to spawn when hit by bullets */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
@@ -121,24 +140,42 @@ private:
   class AEnemyController *EnemyController;
 
   /** Overlap sphere for when the enemy becomes hostile */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true", MakeEditWidget = "true"))
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
   class USphereComponent *AgroSphere;
 
   /** Whether the enemy is staggered */
-  UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true", MakeEditWidget = "true"))
+  UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
   bool bStaggered;
 
   /** Current balance value. When it reaches zero, the enemy gets staggered */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true", MakeEditWidget = "true"))
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
   float Balance;
 
   /** Maximum balance capacity */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true", MakeEditWidget = "true"))
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
   float MaxBalance;
 
   /** Rate at which the balance bar is recovered */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true", MakeEditWidget = "true"))
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
   float BalanceRecoveryRate;
+
+  /** True when in attack range, time to attack */
+  UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+  bool bInAttackRange;
+
+  /** Sphere for attack range */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
+  USphereComponent *CombatRangeSphere;
+
+  /** Montage with attack animations */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+  UAnimMontage *AttackMontage;
+
+  // Attack montage section names
+  FName AttackL;
+  FName AttackR;
+  FName AttackLFast;
+  FName AttackRFast;
 
 public:
   // Called every frame

@@ -153,6 +153,8 @@ void AShooterCharacter::BeginPlay()
 void AShooterCharacter::Move(const FInputActionValue &Value)
 {
   const FVector2D MovementVector = Value.Get<FVector2D>();
+  MovementInputX = FMath::RoundToInt32(MovementVector.X);
+  MovementInputY = FMath::RoundToInt32(MovementVector.Y);
 
   if (!GetController())
   {
@@ -172,25 +174,14 @@ void AShooterCharacter::Move(const FInputActionValue &Value)
 
   if (CombatState != ECombatState::ECS_Dodging)
   {
-    AddMovementInput(ForwardDirection, MovementVector.Y);
+    AddMovementInput(ForwardDirection, MovementInputY);
     if (CombatState != ECombatState::ECS_Sprinting)
     {
-      AddMovementInput(RightDirection, MovementVector.X);
+      AddMovementInput(RightDirection, MovementInputX);
     }
     else
     {
-      AddMovementInput(RightDirection, MovementVector.X / 4);
-    }
-  }
-  else
-  {
-    if (bCanDodge)
-    {
-      int32 MovementX = FMath::RoundToInt32(MovementVector.X);
-      int32 MovementY = FMath::RoundToInt32(MovementVector.Y);
-
-      PlayDodgeAnimation(MovementX, MovementY);
-      StartDodgeTimer();
+      AddMovementInput(RightDirection, MovementInputX / 4);
     }
   }
 }
@@ -306,6 +297,12 @@ void AShooterCharacter::Dodge(const FInputActionValue &Value)
     return;
 
   ResetCombatState(ECombatState::ECS_Dodging);
+
+  int32 Direction = GetMovementInputDirection(MovementInputX, MovementInputY);
+
+  PlayDodgeAnimation(Direction);
+  StartDodgeTimer();
+  bCanDodge = false;
   // Invulnerability
 }
 
@@ -1186,8 +1183,6 @@ void AShooterCharacter::FinishDodge()
 
 int32 AShooterCharacter::GetMovementInputDirection(int32 InputX, int32 InputY)
 {
-  UE_LOG(LogTemp, Display, TEXT("X: %i"), InputX);
-  UE_LOG(LogTemp, Display, TEXT("Y: %i"), InputY);
   switch (InputY)
   {
   case 1:
@@ -1251,16 +1246,12 @@ int32 AShooterCharacter::GetMovementInputDirection(int32 InputX, int32 InputY)
   }
 }
 
-void AShooterCharacter::PlayDodgeAnimation(int32 MovementX, int32 MovementY)
+void AShooterCharacter::PlayDodgeAnimation(int32 Direction)
 {
   UAnimInstance *AnimInstance = GetMesh()->GetAnimInstance();
   if (AnimInstance && DodgeMontage)
   {
     AnimInstance->Montage_Play(DodgeMontage);
-
-    int32 Direction = GetMovementInputDirection(MovementX, MovementY);
-
-    UE_LOG(LogTemp, Display, TEXT("Direction: %i"), Direction);
 
     switch (Direction)
     {

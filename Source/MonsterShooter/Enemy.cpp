@@ -22,13 +22,22 @@ AEnemy::AEnemy() : Health(100.f),
                    bStaggered(false),
                    Balance(100.f),
                    MaxBalance(100.f),
-                   BalanceRecoveryRate(25.f)
+                   BalanceRecoveryRate(25.f),
+                   AttackL(TEXT("AttackL")),
+                   AttackR(TEXT("AttackR")),
+                   AttackLFast(TEXT("AttackLFast")),
+                   AttackRFast(TEXT("AttackRFast"))
 {
   // Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
   PrimaryActorTick.bCanEverTick = true;
 
+  // Create the Agro Sphere
   AgroSphere = CreateDefaultSubobject<USphereComponent>(TEXT("AgroSphere"));
   AgroSphere->SetupAttachment(GetRootComponent());
+
+  // Create the Combat Range Sphere
+  CombatRangeSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CombatRangeSphere"));
+  CombatRangeSphere->SetupAttachment(GetRootComponent());
 }
 
 // Called when the game starts or when spawned
@@ -39,6 +48,12 @@ void AEnemy::BeginPlay()
   AgroSphere->OnComponentBeginOverlap.AddDynamic(
       this,
       &AEnemy::AgroSphereOverlap);
+  CombatRangeSphere->OnComponentBeginOverlap.AddDynamic(
+      this,
+      &AEnemy::CombatRangeOverlap);
+  CombatRangeSphere->OnComponentEndOverlap.AddDynamic(
+      this,
+      &AEnemy::CombatRangeEndOverlap);
 
   GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 
@@ -149,6 +164,57 @@ void AEnemy::SetStaggered(bool Staggered)
         TEXT("Staggered"),
         Staggered);
   }
+}
+
+void AEnemy::CombatRangeOverlap(
+    UPrimitiveComponent *OverlappedComponent,
+    AActor *OtherActor,
+    UPrimitiveComponent *OtherComp,
+    int32 OtherBodyIndex,
+    bool bFromSweep,
+    const FHitResult &SweepResult)
+{
+  if (!OtherActor)
+    return;
+
+  auto ShooterCharacter = Cast<AShooterCharacter>(OtherActor);
+  if (!ShooterCharacter)
+    return;
+
+  bInAttackRange = true;
+  if (EnemyController)
+  {
+    EnemyController->GetBlackboardComponent()->SetValueAsBool(
+        TEXT("InAttackRange"),
+        true);
+  }
+}
+
+void AEnemy::CombatRangeEndOverlap(
+    UPrimitiveComponent *OverlappedComponent,
+    AActor *OtherActor,
+    UPrimitiveComponent *OtherComp,
+    int32 OtherBodyIndex)
+{
+  if (!OtherActor)
+    return;
+
+  auto ShooterCharacter = Cast<AShooterCharacter>(OtherActor);
+  if (!ShooterCharacter)
+    return;
+
+  bInAttackRange = false;
+  if (EnemyController)
+  {
+    EnemyController->GetBlackboardComponent()->SetValueAsBool(
+        TEXT("InAttackRange"),
+        false);
+  }
+}
+
+void AEnemy::AttackPlayer(FName MontageSection)
+{
+  PlayMontage(AttackMontage, MontageSection);
 }
 
 // Called every frame
