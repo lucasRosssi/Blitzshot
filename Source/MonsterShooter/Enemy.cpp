@@ -19,7 +19,7 @@ AEnemy::AEnemy() : Health(100.f),
                    HitReactTimeMin(0.1f),
                    HitReactTimeMax(0.5f),
                    HitNumberDestroyTime(1.5f),
-                   bStunned(false),
+                   bStaggered(false),
                    Balance(100.f),
                    MaxBalance(100.f),
                    BalanceRecoveryRate(25.f)
@@ -77,30 +77,28 @@ void AEnemy::Die()
   HideHealthBar();
 }
 
-void AEnemy::PlayHitMontage(FName Section, float PlayRate)
+void AEnemy::PlayMontage(UAnimMontage *Montage, FName Section, float PlayRate)
 {
-  if (!bCanHitReact)
-    return;
-
   UAnimInstance *AnimInstance = GetMesh()->GetAnimInstance();
-  if (AnimInstance && HitMontage)
+  if (AnimInstance && Montage)
   {
-    AnimInstance->Montage_Play(HitMontage, PlayRate);
-    AnimInstance->Montage_JumpToSection(Section, HitMontage);
+    AnimInstance->Montage_Play(Montage, PlayRate);
+    AnimInstance->Montage_JumpToSection(Section, Montage);
   }
-
-  bCanHitReact = false;
-  const float HitReactTime{FMath::FRandRange(HitReactTimeMin, HitReactTimeMax)};
-  GetWorldTimerManager().SetTimer(
-      HitReactTimer,
-      this,
-      &AEnemy::ResetHitReactTimer,
-      HitReactTime);
 }
 
 void AEnemy::ResetHitReactTimer()
 {
   bCanHitReact = true;
+}
+
+void AEnemy::Stagger()
+{
+  if (bStaggered)
+    return;
+
+  SetStaggered(true);
+  PlayMontage(StaggerMontage, FName("HitReactFront"), 0.75f);
 }
 
 void AEnemy::StoreHitNumber(UUserWidget *HitNumber, FVector Location)
@@ -142,14 +140,14 @@ void AEnemy::AgroSphereOverlap(
   }
 }
 
-void AEnemy::SetStunned(bool Stunned)
+void AEnemy::SetStaggered(bool Staggered)
 {
-  bStunned = Stunned;
+  bStaggered = Staggered;
   if (EnemyController)
   {
     EnemyController->GetBlackboardComponent()->SetValueAsBool(
-        TEXT("Stunned"),
-        Stunned);
+        TEXT("Staggered"),
+        Staggered);
   }
 }
 
@@ -178,14 +176,13 @@ void AEnemy::BulletHit_Implementation(FHitResult HitResult)
   }
 
   ShowHealthBar();
-  if (bStunned)
+  if (bStaggered)
     return;
 
-  if (Balance <= 0)
+  float Chance = FMath::RandRange(0.f, 1.f);
+  if (Chance < 0.25f)
   {
-    SetStunned(true);
-    PlayHitMontage(FName("HitReactFront"), 0.75f);
-    Balance = MaxBalance;
+    PlayMontage(HitMontage, FName("HitFront"));
   }
 }
 
@@ -206,8 +203,16 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEv
 
 void AEnemy::TakeBalanceDamage(float Amount)
 {
-  if (bStunned)
+  if (bStaggered)
     return;
 
-  Balance -= Amount;
+  if (Balance - Amount <= 0.f)
+  {
+    Balance = 0;
+    Stagger();
+  }
+  else
+  {
+    Balance -= Amount;
+  }
 }

@@ -58,15 +58,17 @@ AShooterCharacter::AShooterCharacter() : bAiming(false),
                                          CombatState(ECombatState::ECS_Unoccupied),
                                          bCrouching(false),
                                          // Movement speed variables
-                                         BaseMovementSpeed(600.f),
-                                         AimMovementSpeed(300.f),
+                                         BaseMovementSpeed(500.f),
+                                         AimMovementSpeed(250.f),
                                          // Pickup sound timer properties
                                          bShouldPlayPickupSound(true),
                                          bShouldPlayEquipSound(true),
                                          PickupSoundResetTime(0.2f),
                                          EquipSoundResetTime(0.2f),
                                          RecoilCameraSpeed(5.f),
-                                         RecoilAmount(0.8f)
+                                         RecoilAmount(0.8f),
+                                         DodgeMontageSection(TEXT("DodgeBackward")),
+                                         bCanDodge(true)
 {
   // Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
   PrimaryActorTick.bCanEverTick = true;
@@ -152,30 +154,44 @@ void AShooterCharacter::Move(const FInputActionValue &Value)
 {
   const FVector2D MovementVector = Value.Get<FVector2D>();
 
-  if (CombatState == ECombatState::ECS_Sprinting && MovementVector.Y < 0.5f)
-  {
-    EndSprint();
-  }
-
   if (!GetController())
   {
     return;
+  }
+
+  if (CombatState == ECombatState::ECS_Sprinting && MovementVector.Y < 0.5f)
+  {
+    EndSprint();
   }
 
   const FRotator Rotation = GetController()->GetControlRotation();
   const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
 
   const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-  AddMovementInput(ForwardDirection, MovementVector.Y);
-
   const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-  if (CombatState != ECombatState::ECS_Sprinting)
+
+  if (CombatState != ECombatState::ECS_Dodging)
   {
-    AddMovementInput(RightDirection, MovementVector.X);
+    AddMovementInput(ForwardDirection, MovementVector.Y);
+    if (CombatState != ECombatState::ECS_Sprinting)
+    {
+      AddMovementInput(RightDirection, MovementVector.X);
+    }
+    else
+    {
+      AddMovementInput(RightDirection, MovementVector.X / 4);
+    }
   }
   else
   {
-    AddMovementInput(RightDirection, MovementVector.X / 4);
+    if (bCanDodge)
+    {
+      int32 MovementX = FMath::RoundToInt32(MovementVector.X);
+      int32 MovementY = FMath::RoundToInt32(MovementVector.Y);
+
+      PlayDodgeAnimation(MovementX, MovementY);
+      StartDodgeTimer();
+    }
   }
 }
 
@@ -267,7 +283,7 @@ void AShooterCharacter::Crouch(const FInputActionValue &Value)
 
 void AShooterCharacter::Sprint(const FInputActionValue &Value)
 {
-  if (GetCharacterMovement()->IsFalling())
+  if (GetCharacterMovement()->IsFalling() || CombatState == ECombatState::ECS_Dodging)
     return;
 
   if (CombatState != ECombatState::ECS_Sprinting)
@@ -282,6 +298,15 @@ void AShooterCharacter::Sprint(const FInputActionValue &Value)
 
     GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
   }
+}
+
+void AShooterCharacter::Dodge(const FInputActionValue &Value)
+{
+  if (GetCharacterMovement()->IsFalling() || CombatState == ECombatState::ECS_Dodging || !bCanDodge)
+    return;
+
+  ResetCombatState(ECombatState::ECS_Dodging);
+  // Invulnerability
 }
 
 void AShooterCharacter::SwitchWeapon1(const FInputActionValue &Value)
@@ -431,7 +456,10 @@ void AShooterCharacter::StartFireTimer()
 
 void AShooterCharacter::AutoFireReset()
 {
-  CombatState = ECombatState::ECS_Unoccupied;
+  if (CombatState == ECombatState::ECS_FireTimerInProgress)
+  {
+    CombatState = ECombatState::ECS_Unoccupied;
+  }
 
   if (!EquippedWeapon)
     return;
@@ -1120,6 +1148,170 @@ void AShooterCharacter::TriggerRecoil()
   }
 }
 
+void AShooterCharacter::ResetCombatState(ECombatState NewCombatState)
+{
+  if (!InInterruptableCombatState())
+    return;
+
+  switch (CombatState)
+  {
+  case ECombatState::ECS_Sprinting:
+  {
+    EndSprint();
+    break;
+  }
+  case ECombatState::ECS_Equipping:
+  case ECombatState::ECS_Reloading:
+  {
+    GetMesh()->GetAnimInstance()->StopAllMontages(0);
+    break;
+  }
+  }
+
+  CombatState = NewCombatState;
+}
+
+bool AShooterCharacter::InInterruptableCombatState()
+{
+  return CombatState == ECombatState::ECS_Unoccupied ||
+         CombatState == ECombatState::ECS_Equipping ||
+         CombatState == ECombatState::ECS_Reloading ||
+         CombatState == ECombatState::ECS_Sprinting;
+}
+
+void AShooterCharacter::FinishDodge()
+{
+  CombatState = ECombatState::ECS_Unoccupied;
+}
+
+int32 AShooterCharacter::GetMovementInputDirection(int32 InputX, int32 InputY)
+{
+  UE_LOG(LogTemp, Display, TEXT("X: %i"), InputX);
+  UE_LOG(LogTemp, Display, TEXT("Y: %i"), InputY);
+  switch (InputY)
+  {
+  case 1:
+  {
+    switch (InputX)
+    {
+    case 1:
+    {
+      return 45;
+    }
+    case 0:
+    {
+      return 0;
+    }
+    case -1:
+    {
+      return 315;
+    }
+    }
+  }
+  case 0:
+  {
+    switch (InputX)
+    {
+    case 1:
+    {
+      return 90;
+    }
+    case 0:
+    {
+      return -1;
+    }
+    case -1:
+    {
+      return 270;
+    }
+    }
+  }
+  case -1:
+  {
+    switch (InputX)
+    {
+    case 1:
+    {
+      return 135;
+    }
+    case 0:
+    {
+      return 180;
+    }
+    case -1:
+    {
+      return 225;
+    }
+    }
+  }
+  default:
+  {
+    return -1;
+  }
+  }
+}
+
+void AShooterCharacter::PlayDodgeAnimation(int32 MovementX, int32 MovementY)
+{
+  UAnimInstance *AnimInstance = GetMesh()->GetAnimInstance();
+  if (AnimInstance && DodgeMontage)
+  {
+    AnimInstance->Montage_Play(DodgeMontage);
+
+    int32 Direction = GetMovementInputDirection(MovementX, MovementY);
+
+    UE_LOG(LogTemp, Display, TEXT("Direction: %i"), Direction);
+
+    switch (Direction)
+    {
+    case 0: // Forward
+    {
+      AnimInstance->Montage_JumpToSection(FName("DodgeForward"));
+      break;
+    }
+    case 45: // Forward-Right
+    {
+      AnimInstance->Montage_JumpToSection(FName("DodgeFR"));
+      break;
+    }
+    case 90: // Right
+    {
+      AnimInstance->Montage_JumpToSection(FName("DodgeRight"));
+      break;
+    }
+    case 135: // Backward-Right
+    {
+      AnimInstance->Montage_JumpToSection(FName("DodgeBR"));
+      break;
+    }
+    case 180: // Backward
+    {
+      AnimInstance->Montage_JumpToSection(FName("DodgeBackward"));
+      break;
+    }
+    case 225: // Backward-Left
+    {
+      AnimInstance->Montage_JumpToSection(FName("DodgeBL"));
+      break;
+    }
+    case 270: // Left
+    {
+      AnimInstance->Montage_JumpToSection(FName("DodgeLeft"));
+      break;
+    }
+    case 315: // Forward-Left
+    {
+      AnimInstance->Montage_JumpToSection(FName("DodgeFL"));
+      break;
+    }
+    default:
+    {
+      AnimInstance->Montage_JumpToSection(FName("DodgeBackward"));
+    }
+    }
+  }
+}
+
 // Called every frame
 void AShooterCharacter::Tick(float DeltaTime)
 {
@@ -1144,6 +1336,7 @@ void AShooterCharacter::SetupPlayerInputComponent(UInputComponent *PlayerInputCo
     EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AShooterCharacter::Look);
     EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AShooterCharacter::Jump);
     EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &AShooterCharacter::Sprint);
+    EnhancedInputComponent->BindAction(DodgeAction, ETriggerEvent::Started, this, &AShooterCharacter::Dodge);
 
     EnhancedInputComponent->BindAction(FireWeaponAction, ETriggerEvent::Started, this, &AShooterCharacter::FireButtonPressed);
     EnhancedInputComponent->BindAction(FireWeaponAction, ETriggerEvent::Completed, this, &AShooterCharacter::FireButtonReleased);
@@ -1308,4 +1501,19 @@ void AShooterCharacter::StartEquipSoundTimer()
       this,
       &AShooterCharacter::ResetEquipSoundTimer,
       EquipSoundResetTime);
+}
+
+void AShooterCharacter::StartDodgeTimer()
+{
+  bCanDodge = false;
+  GetWorldTimerManager().SetTimer(
+      DodgeTimer,
+      this,
+      &AShooterCharacter::ResetDodgeTimer,
+      1.5f);
+}
+
+void AShooterCharacter::ResetDodgeTimer()
+{
+  bCanDodge = true;
 }

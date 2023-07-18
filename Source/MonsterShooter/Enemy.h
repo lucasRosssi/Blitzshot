@@ -29,9 +29,11 @@ protected:
 
   void Die();
 
-  void PlayHitMontage(FName Section, float PlayRate = 1.0f);
+  void PlayMontage(UAnimMontage *Montage, FName Section, float PlayRate = 1.0f);
 
   void ResetHitReactTimer();
+
+  void Stagger();
 
   UFUNCTION(BlueprintCallable)
   void StoreHitNumber(UUserWidget *HitNumber, FVector Location);
@@ -50,7 +52,7 @@ protected:
       const FHitResult &SweepResult);
 
   UFUNCTION(BlueprintCallable)
-  void SetStunned(bool Stunned);
+  void SetStaggered(bool Staggered);
 
 private:
   /** Particles to spawn when hit by bullets */
@@ -78,6 +80,10 @@ private:
   float HealthBarDisplayTime;
 
   FTimerHandle HealthBarTimer;
+
+  /** Montage with stagger hit */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+  UAnimMontage *StaggerMontage;
 
   /** Montage with shot hit and enemy death animations */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
@@ -118,11 +124,11 @@ private:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true", MakeEditWidget = "true"))
   class USphereComponent *AgroSphere;
 
-  /** Whether the enemy is stunned */
+  /** Whether the enemy is staggered */
   UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true", MakeEditWidget = "true"))
-  bool bStunned;
+  bool bStaggered;
 
-  /** Current balance value. When it reaches zero, the enemy gets stunned */
+  /** Current balance value. When it reaches zero, the enemy gets staggered */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true", MakeEditWidget = "true"))
   float Balance;
 
@@ -147,10 +153,11 @@ public:
 
   void TakeBalanceDamage(float Amount);
 
-  FORCEINLINE FString GetWeakspotBone() const { return WeakspotBone; }
-
   UFUNCTION(BlueprintImplementableEvent)
   void ShowHitNumber(int32 Damage, FVector HitLocation, bool bWeakspot);
 
+  FORCEINLINE FString GetWeakspotBone() const { return WeakspotBone; }
   FORCEINLINE UBehaviorTree *GetBehaviorTree() const { return BehaviorTree; }
+
+  FORCEINLINE void SetBalance(float Amount) { Balance = Amount; }
 };

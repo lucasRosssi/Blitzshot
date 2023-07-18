@@ -16,6 +16,7 @@ enum class ECombatState : uint8
   ECS_Reloading UMETA(DisplayName = "Reloading"),
   ECS_Equipping UMETA(DisplayName = "Equipping"),
   ECS_Sprinting UMETA(DisplayName = "Sprinting"),
+  ECS_Dodging UMETA(DisplayName = "Dodging"),
 
   ECS_MAX UMETA(DisplayName = "DefaultMAX")
 };
@@ -71,6 +72,8 @@ protected:
   void Crouch(const FInputActionValue &Value);
   // Called to handle sprinting
   void Sprint(const FInputActionValue &Value);
+  // Called to handle dodge
+  void Dodge(const FInputActionValue &Value);
 
   void SwitchWeapon1(const FInputActionValue &Value);
   void SwitchWeapon2(const FInputActionValue &Value);
@@ -98,6 +101,8 @@ protected:
   UInputAction *CrouchAction;
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
   UInputAction *SprintAction;
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction *DodgeAction;
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
   UInputAction *SwitchWeapon1Action;
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
@@ -193,6 +198,18 @@ protected:
   void FinishEquipping();
 
   void TriggerRecoil();
+
+  UFUNCTION(BlueprintCallable)
+  void ResetCombatState(ECombatState NewCombatState = ECombatState::ECS_Unoccupied);
+
+  bool InInterruptableCombatState();
+
+  UFUNCTION(BlueprintCallable)
+  void FinishDodge();
+
+  int32 GetMovementInputDirection(int32 InputX, int32 InputY);
+
+  void PlayDodgeAnimation(int32 MovementX, int32 MovementY);
 
 public:
   // Called every frame
@@ -417,6 +434,21 @@ private:
   /** Variable used to recover from recoil */
   float VerticalRecoilRecovery;
   float HorizontalRecoilRecovery;
+
+  /** Montage for dodging */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  class UAnimMontage *DodgeMontage;
+
+  /** Section name of dodge animation in DodgeMontage */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  FName DodgeMontageSection;
+
+  UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  bool bCanDodge;
+
+  FTimerHandle DodgeTimer;
+  void StartDodgeTimer();
+  void ResetDodgeTimer();
 
 public:
   // Returns CameraBoom subobject
