@@ -68,7 +68,9 @@ AShooterCharacter::AShooterCharacter() : bAiming(false),
                                          RecoilCameraSpeed(5.f),
                                          RecoilAmount(0.8f),
                                          DodgeMontageSection(TEXT("DodgeBackward")),
-                                         bCanDodge(true)
+                                         bCanDodge(true),
+                                         MaxHealth(100.f),
+                                         Health(MaxHealth)
 {
   // Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
   PrimaryActorTick.bCanEverTick = true;
@@ -114,6 +116,24 @@ AShooterCharacter::AShooterCharacter() : bAiming(false),
   InterpComp5->SetupAttachment(GetFollowCamera());
   InterpComp6 = CreateDefaultSubobject<USceneComponent>(TEXT("Interpolation Component 6"));
   InterpComp6->SetupAttachment(GetFollowCamera());
+}
+
+float AShooterCharacter::TakeDamage(
+    float DamageAmount,
+    struct FDamageEvent const &DamageEvent,
+    class AController *EventInstigator,
+    AActor *DamageCauser)
+{
+  if (Health - DamageAmount <= 0.f)
+  {
+    Health = 0.f;
+  }
+  else
+  {
+    Health -= DamageAmount;
+  }
+
+  return DamageAmount;
 }
 
 // Called when the game starts or when spawned

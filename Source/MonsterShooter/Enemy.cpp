@@ -10,6 +10,8 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Components/SphereComponent.h"
 #include "ShooterCharacter.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/BoxComponent.h"
 
 // Sets default values
 AEnemy::AEnemy() : Health(100.f),
@@ -26,7 +28,8 @@ AEnemy::AEnemy() : Health(100.f),
                    AttackL(TEXT("AttackL")),
                    AttackR(TEXT("AttackR")),
                    AttackLFast(TEXT("AttackLFast")),
-                   AttackRFast(TEXT("AttackRFast"))
+                   AttackRFast(TEXT("AttackRFast")),
+                   BasicAttackDamage(20.f)
 {
   // Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
   PrimaryActorTick.bCanEverTick = true;
@@ -38,6 +41,12 @@ AEnemy::AEnemy() : Health(100.f),
   // Create the Combat Range Sphere
   CombatRangeSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CombatRangeSphere"));
   CombatRangeSphere->SetupAttachment(GetRootComponent());
+
+  // Create the left and right weapons collision boxes
+  LeftWeaponCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("Left Weapon Box"));
+  LeftWeaponCollision->SetupAttachment(GetMesh(), FName("LeftWeaponBone"));
+  RightWeaponCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("Right Weapon Box"));
+  RightWeaponCollision->SetupAttachment(GetMesh(), FName("RightWeaponBone"));
 }
 
 // Called when the game starts or when spawned
@@ -55,7 +64,27 @@ void AEnemy::BeginPlay()
       this,
       &AEnemy::CombatRangeEndOverlap);
 
+  // Bind functions to overlap events for weapon boxes
+  LeftWeaponCollision->OnComponentBeginOverlap.AddDynamic(
+      this,
+      &AEnemy::OnLeftWeaponOverlap);
+  RightWeaponCollision->OnComponentBeginOverlap.AddDynamic(
+      this,
+      &AEnemy::OnRightWeaponOverlap);
+  // Set collision presets for weapon boxes
+  LeftWeaponCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+  LeftWeaponCollision->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
+  LeftWeaponCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+  LeftWeaponCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+  RightWeaponCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+  RightWeaponCollision->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
+  RightWeaponCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+  RightWeaponCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+
   GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+  // Ignore camera from collision
+  GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+  GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 
   // Get the AI controller
   EnemyController = Cast<AEnemyController>(GetController());
@@ -215,6 +244,95 @@ void AEnemy::CombatRangeEndOverlap(
 void AEnemy::AttackPlayer(FName MontageSection)
 {
   PlayMontage(AttackMontage, MontageSection);
+}
+
+FName AEnemy::GetAttackSectionName()
+{
+  FName SectionName;
+  const int32 Section{FMath::RandRange(1, 4)};
+
+  switch (Section)
+  {
+  case 1:
+    SectionName = AttackL;
+    break;
+  case 2:
+    SectionName = AttackR;
+    break;
+  case 3:
+    SectionName = AttackLFast;
+    break;
+  case 4:
+    SectionName = AttackRFast;
+    break;
+  }
+  return SectionName;
+}
+
+void AEnemy::DoDamage(AActor *Target)
+{
+  if (!Target)
+    return;
+
+  auto Character = Cast<AShooterCharacter>(Target);
+  if (!Character)
+    return;
+
+  UGameplayStatics::ApplyDamage(Character,
+                                BasicAttackDamage,
+                                EnemyController,
+                                this,
+                                UDamageType::StaticClass());
+
+  if (Character->GetMeleeImpactSound())
+  {
+    UGameplayStatics::PlaySoundAtLocation(
+        this,
+        Character->GetMeleeImpactSound(),
+        Character->GetActorLocation());
+  }
+}
+
+void AEnemy::OnLeftWeaponOverlap(
+    UPrimitiveComponent *OverlappedComponent,
+    AActor *OtherActor,
+    UPrimitiveComponent *OtherComp,
+    int32 OtherBodyIndex,
+    bool bFromSweep,
+    const FHitResult &SweepResult)
+{
+  DoDamage(OtherActor);
+}
+
+void AEnemy::OnRightWeaponOverlap(
+    UPrimitiveComponent *OverlappedComponent,
+    AActor *OtherActor,
+    UPrimitiveComponent *OtherComp,
+    int32 OtherBodyIndex,
+    bool bFromSweep,
+    const FHitResult &SweepResult)
+{
+  DoDamage(OtherActor);
+}
+
+void AEnemy::ActivateLeftWeapon()
+{
+  LeftWeaponCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+}
+
+void AEnemy::DeactivateLeftWeapon()
+{
+  LeftWeaponCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+void AEnemy::ActivateRightWeapon()
+{
+  RightWeaponCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+}
+
+void AEnemy::DeactivateRightWeapon()
+{
+  RightWeaponCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 // Called every frame

@@ -73,6 +73,38 @@ protected:
   UFUNCTION(BlueprintCallable)
   void AttackPlayer(FName MontageSection);
 
+  UFUNCTION(BlueprintPure)
+  FName GetAttackSectionName();
+
+  UFUNCTION()
+  void OnLeftWeaponOverlap(
+      UPrimitiveComponent *OverlappedComponent,
+      AActor *OtherActor,
+      UPrimitiveComponent *OtherComp,
+      int32 OtherBodyIndex,
+      bool bFromSweep,
+      const FHitResult &SweepResult);
+  UFUNCTION()
+  void OnRightWeaponOverlap(
+      UPrimitiveComponent *OverlappedComponent,
+      AActor *OtherActor,
+      UPrimitiveComponent *OtherComp,
+      int32 OtherBodyIndex,
+      bool bFromSweep,
+      const FHitResult &SweepResult);
+
+  // Activate / deactivate weapon collision
+  UFUNCTION(BlueprintCallable)
+  void ActivateLeftWeapon();
+  UFUNCTION(BlueprintCallable)
+  void DeactivateLeftWeapon();
+  UFUNCTION(BlueprintCallable)
+  void ActivateRightWeapon();
+  UFUNCTION(BlueprintCallable)
+  void DeactivateRightWeapon();
+
+  void DoDamage(AActor *Target);
+
 private:
   /** Particles to spawn when hit by bullets */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
@@ -176,6 +208,18 @@ private:
   FName AttackR;
   FName AttackLFast;
   FName AttackRFast;
+
+  /** Collision volume for the left weapon */
+  UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+  class UBoxComponent *LeftWeaponCollision;
+
+  /** Collision volume for the right weapon */
+  UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+  UBoxComponent *RightWeaponCollision;
+
+  /** Damage dealt by basic attacks */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+  float BasicAttackDamage;
 
 public:
   // Called every frame
