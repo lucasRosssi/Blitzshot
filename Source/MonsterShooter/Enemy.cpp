@@ -29,7 +29,9 @@ AEnemy::AEnemy() : Health(100.f),
                    AttackR(TEXT("AttackR")),
                    AttackLFast(TEXT("AttackLFast")),
                    AttackRFast(TEXT("AttackRFast")),
-                   BasicAttackDamage(20.f)
+                   BasicAttackDamage(20.f),
+                   bCanAttack(true),
+                   AttackWaitTime(1.f)
 {
   // Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
   PrimaryActorTick.bCanEverTick = true;
@@ -67,10 +69,10 @@ void AEnemy::BeginPlay()
   // Bind functions to overlap events for weapon boxes
   LeftWeaponCollision->OnComponentBeginOverlap.AddDynamic(
       this,
-      &AEnemy::OnLeftWeaponOverlap);
+      &AEnemy::OnWeaponOverlap);
   RightWeaponCollision->OnComponentBeginOverlap.AddDynamic(
       this,
-      &AEnemy::OnRightWeaponOverlap);
+      &AEnemy::OnWeaponOverlap);
   // Set collision presets for weapon boxes
   LeftWeaponCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
   LeftWeaponCollision->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
@@ -100,6 +102,7 @@ void AEnemy::BeginPlay()
   {
     EnemyController->GetBlackboardComponent()->SetValueAsVector(TEXT("PatrolPoint1"), WorldPatrolPoint1);
     EnemyController->GetBlackboardComponent()->SetValueAsVector(TEXT("PatrolPoint2"), WorldPatrolPoint2);
+    EnemyController->GetBlackboardComponent()->SetValueAsBool(FName("CanAttack"), true);
 
     EnemyController->RunBehaviorTree(BehaviorTree);
   }
@@ -243,7 +246,21 @@ void AEnemy::CombatRangeEndOverlap(
 
 void AEnemy::AttackPlayer(FName MontageSection)
 {
+  if (!bCanAttack) return;
+
   PlayMontage(AttackMontage, MontageSection);
+  bCanAttack = false;
+  GetWorldTimerManager().SetTimer(
+    AttackWaitTimer,
+    this,
+    &AEnemy::ResetCanAttack,
+    AttackWaitTime
+  );
+
+  if (EnemyController)
+  {
+    EnemyController->GetBlackboardComponent()->SetValueAsBool(FName("CanAttack"), false);
+  }
 }
 
 FName AEnemy::GetAttackSectionName()
@@ -269,13 +286,13 @@ FName AEnemy::GetAttackSectionName()
   return SectionName;
 }
 
-void AEnemy::DoDamage(AActor *Target)
+void AEnemy::DoDamage(AActor *Target, const FHitResult &SweepResult)
 {
   if (!Target)
     return;
 
   auto Character = Cast<AShooterCharacter>(Target);
-  if (!Character)
+  if (!Character || Character->IsInvulnerable())
     return;
 
   UGameplayStatics::ApplyDamage(Character,
@@ -291,9 +308,22 @@ void AEnemy::DoDamage(AActor *Target)
         Character->GetMeleeImpactSound(),
         Character->GetActorLocation());
   }
+
+  if (Character->GetBloodParticles())
+  {
+    const int32 BoneIndex = Character->GetMesh()->GetBoneIndex(SweepResult.BoneName);
+
+    UGameplayStatics::SpawnEmitterAtLocation(
+      GetWorld(),
+      Character->GetBloodParticles(),
+      SweepResult.ImpactPoint
+    );
+  }
+
+  Character->Stagger();
 }
 
-void AEnemy::OnLeftWeaponOverlap(
+void AEnemy::OnWeaponOverlap(
     UPrimitiveComponent *OverlappedComponent,
     AActor *OtherActor,
     UPrimitiveComponent *OtherComp,
@@ -301,18 +331,8 @@ void AEnemy::OnLeftWeaponOverlap(
     bool bFromSweep,
     const FHitResult &SweepResult)
 {
-  DoDamage(OtherActor);
-}
-
-void AEnemy::OnRightWeaponOverlap(
-    UPrimitiveComponent *OverlappedComponent,
-    AActor *OtherActor,
-    UPrimitiveComponent *OtherComp,
-    int32 OtherBodyIndex,
-    bool bFromSweep,
-    const FHitResult &SweepResult)
-{
-  DoDamage(OtherActor);
+  DoDamage(OtherActor, SweepResult);
+  // Character->GetMesh()->GetBoneLocation()
 }
 
 void AEnemy::ActivateLeftWeapon()
@@ -333,6 +353,15 @@ void AEnemy::ActivateRightWeapon()
 void AEnemy::DeactivateRightWeapon()
 {
   RightWeaponCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+void AEnemy::ResetCanAttack()
+{
+  bCanAttack = true;
+  if (EnemyController)
+  {
+    EnemyController->GetBlackboardComponent()->SetValueAsBool(FName("CanAttack"), true);
+  }
 }
 
 // Called every frame

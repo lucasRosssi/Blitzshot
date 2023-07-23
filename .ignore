@@ -1,8 +1,7 @@
-.git
-.vs
-.vscode
-Content
-DerivedDataCache
-Intermediate
-Platforms
-Saved
+/.vs
+/.vscode
+/Content
+/DerivedDataCache
+/Intermediate
+/Platforms
+/Saved

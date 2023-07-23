@@ -6,7 +6,42 @@
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
 #include "AmmoType.h"
+#include "Engine/DataTable.h"
+#include "CharacterName.h"
 #include "ShooterCharacter.generated.h"
+
+USTRUCT(BlueprintType)
+struct FCharacterProperties : public FTableRowBase
+{
+  GENERATED_BODY()
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  USkeletalMesh* SkeletalMesh;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UClass* AnimationBlueprint;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  class UAnimMontage* HipFireMontage;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UAnimMontage* AimFireMontage;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UAnimMontage* ReloadMontage;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UAnimMontage* EquipMontage;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UAnimMontage* DodgeMontage;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UAnimMontage* HitReactMontage;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  FVector MeshScale;
+};
 
 UENUM(BlueprintType)
 enum class ECombatState : uint8
@@ -17,6 +52,7 @@ enum class ECombatState : uint8
   ECS_Equipping UMETA(DisplayName = "Equipping"),
   ECS_Sprinting UMETA(DisplayName = "Sprinting"),
   ECS_Dodging UMETA(DisplayName = "Dodging"),
+  ECS_Staggered UMETA(DisplayName = "Staggered"),
 
   ECS_MAX UMETA(DisplayName = "DefaultMAX")
 };
@@ -38,7 +74,7 @@ struct FInterpLocation
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
     FEquipItemDelegate,
     int32, CurrentSlotIndex,
-    int32, NewSlotIndex)
+    int32, NewSlotIndex);
 
     UCLASS() class MONSTERSHOOTER_API AShooterCharacter : public ACharacter
 {
@@ -58,6 +94,8 @@ public:
 protected:
   // Called when the game starts or when spawned
   virtual void BeginPlay() override;
+
+  virtual void OnConstruction(const FTransform &Transform) override;
 
   // Called for forwards/backwards input
   void Move(const FInputActionValue &Value);
@@ -207,16 +245,28 @@ protected:
   void TriggerRecoil();
 
   UFUNCTION(BlueprintCallable)
-  void ResetCombatState(ECombatState NewCombatState = ECombatState::ECS_Unoccupied);
-
-  bool InInterruptableCombatState();
-
-  UFUNCTION(BlueprintCallable)
   void FinishDodge();
 
   int32 GetMovementInputDirection(int32 InputX, int32 InputY);
 
   void PlayDodgeAnimation(int32 Direction);
+
+  UFUNCTION(BlueprintCallable)
+  void EndStagger();
+
+  void HandleSprint(float DeltaTime);
+
+  void HealthRegenReset();
+
+  void RegenerateHealth(float DeltaTime);
+
+  void StaminaRegenReset();
+
+  void RecoverStamina(float DeltaTime);
+
+  void ConsumeStamina(float Amount);
+
+  void PlayAnimationMontage(UAnimMontage* Montage, FName Section, float PlayRate = 1.0f);
 
 public:
   // Called every frame
@@ -236,7 +286,7 @@ private:
 
   // Montage for firing the weapon
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
-  class UAnimMontage *HipFireMontage;
+  UAnimMontage *HipFireMontage;
 
   // Particles spawned upon bullet impact
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
@@ -444,7 +494,7 @@ private:
 
   /** Montage for dodging */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
-  class UAnimMontage *DodgeMontage;
+  UAnimMontage *DodgeMontage;
 
   /** Section name of dodge animation in DodgeMontage */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
@@ -471,6 +521,45 @@ private:
   /** Sound played when the character is hit by a melee attack */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
   class USoundCue *MeleeImpactSound;
+
+  /** Blood splatter particles spawned when being hit */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  UParticleSystem* BloodParticles;
+
+  /** Montage played when getting hit */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  UAnimMontage *HitReactMontage;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character, meta = (AllowPrivateAccess = "true"))
+  ECharacterName CharacterName;
+
+  /** Whether the character can be hit or not */
+  UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  bool bInvulnerable;
+
+  /** Amount of health recovered per regen */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  float HealthRegen;
+  /** Amount of time after taking damage that the health will start to recover */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  float HealthRegenCooldown;
+  bool bCanRegenerateHealth;
+  FTimerHandle HealthRegenStartTimer;
+
+  /** Character maximum stamina */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  float MaxStamina;
+  /** Character current stamina */
+  UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  float Stamina;
+  /** Amount of stamina recovered per regen */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  float StaminaRegen;
+  /** Amount of time after perfoming a stamina action that the stamin will start to recover */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  float StaminaRegenCooldown;
+  bool bCanRegenerateStamina;
+  FTimerHandle StaminaRegenStartTimer;
 
 public:
   // Returns CameraBoom subobject
@@ -509,4 +598,9 @@ public:
   void StartEquipSoundTimer();
 
   FORCEINLINE USoundCue *GetMeleeImpactSound() const { return MeleeImpactSound; }
+  FORCEINLINE UParticleSystem* GetBloodParticles() const { return BloodParticles; }
+
+  FORCEINLINE bool IsInvulnerable() const { return bInvulnerable; }
+
+  void Stagger();
 };

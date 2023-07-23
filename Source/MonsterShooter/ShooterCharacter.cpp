@@ -70,7 +70,16 @@ AShooterCharacter::AShooterCharacter() : bAiming(false),
                                          DodgeMontageSection(TEXT("DodgeBackward")),
                                          bCanDodge(true),
                                          MaxHealth(100.f),
-                                         Health(MaxHealth)
+                                         Health(MaxHealth),
+                                         bInvulnerable(false),
+                                         HealthRegen(10.0f),
+                                         HealthRegenCooldown(5.0f),
+                                         bCanRegenerateHealth(true),
+                                         MaxStamina(100.f),
+                                         Stamina(MaxStamina),
+                                         StaminaRegen(20.f),
+                                         StaminaRegenCooldown(3.0f),
+                                         bCanRegenerateStamina(true)
 {
   // Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
   PrimaryActorTick.bCanEverTick = true;
@@ -133,6 +142,13 @@ float AShooterCharacter::TakeDamage(
     Health -= DamageAmount;
   }
 
+  bCanRegenerateHealth = false;
+  GetWorldTimerManager().SetTimer(
+      HealthRegenStartTimer,
+      this,
+      &AShooterCharacter::HealthRegenReset,
+      HealthRegenCooldown);
+
   return DamageAmount;
 }
 
@@ -168,6 +184,49 @@ void AShooterCharacter::BeginPlay()
   InitializeInterpLocations();
 }
 
+void AShooterCharacter::OnConstruction(const FTransform &Transform)
+{
+  Super::OnConstruction(Transform);
+
+  const FString CharacterTablePath{TEXT("/Script/Engine.DataTable'/Game/_Game/DataTable/DT_CharacterProperties.DT_CharacterProperties'")};
+  UDataTable *CharacterTableObject = Cast<UDataTable>(StaticLoadObject(UDataTable::StaticClass(), nullptr, *CharacterTablePath));
+
+  if (CharacterTableObject)
+  {
+    FCharacterProperties *CharacterDataRow = nullptr;
+
+    switch (CharacterName)
+    {
+    case ECharacterName::ECN_Belica:
+      CharacterDataRow = CharacterTableObject->FindRow<FCharacterProperties>(FName("Belica"), TEXT(""));
+      break;
+    case ECharacterName::ECN_TwinBlast:
+      CharacterDataRow = CharacterTableObject->FindRow<FCharacterProperties>(FName("TwinBlast"), TEXT(""));
+      break;
+    case ECharacterName::ECN_Commando:
+      CharacterDataRow = CharacterTableObject->FindRow<FCharacterProperties>(FName("Commando"), TEXT(""));
+      break;
+    case ECharacterName::ECN_Revenant:
+      CharacterDataRow = CharacterTableObject->FindRow<FCharacterProperties>(FName("Revenant"), TEXT(""));
+      break;
+    }
+
+    if (CharacterDataRow)
+    {
+      GetMesh()->SetAnimInstanceClass(CharacterDataRow->AnimationBlueprint);
+      
+      GetMesh()->SetSkeletalMeshAsset(CharacterDataRow->SkeletalMesh);
+      GetMesh()->SetWorldScale3D(CharacterDataRow->MeshScale);
+      HipFireMontage = CharacterDataRow->HipFireMontage;
+      AimFireMontage = CharacterDataRow->AimFireMontage;
+      ReloadMontage = CharacterDataRow->ReloadMontage;
+      EquipMontage = CharacterDataRow->EquipMontage;
+      DodgeMontage = CharacterDataRow->DodgeMontage;
+      HitReactMontage = CharacterDataRow->HitReactMontage;
+    }
+  }
+}
+
 /* START INPUT ACTIONS */
 
 void AShooterCharacter::Move(const FInputActionValue &Value)
@@ -183,7 +242,7 @@ void AShooterCharacter::Move(const FInputActionValue &Value)
 
   if (CombatState == ECombatState::ECS_Sprinting && MovementVector.Y < 0.5f)
   {
-    EndSprint();
+    CombatState = ECombatState::ECS_Unoccupied;
   }
 
   const FRotator Rotation = GetController()->GetControlRotation();
@@ -192,7 +251,9 @@ void AShooterCharacter::Move(const FInputActionValue &Value)
   const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
   const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-  if (CombatState != ECombatState::ECS_Dodging)
+  const bool bMoveableState = CombatState != ECombatState::ECS_Dodging && CombatState != ECombatState::ECS_Staggered;
+
+  if (bMoveableState)
   {
     AddMovementInput(ForwardDirection, MovementInputY);
     if (CombatState != ECombatState::ECS_Sprinting)
@@ -213,7 +274,7 @@ void AShooterCharacter::Look(const FInputActionValue &Value)
   AddControllerPitchInput(LookAxisVector.Y * BaseLookRate);
   if (CombatState == ECombatState::ECS_Sprinting)
   {
-    AddControllerYawInput(FMath::Clamp(LookAxisVector.X, -0.5f, 0.5f) * BaseLookRate);
+    AddControllerYawInput(FMath::Clamp(LookAxisVector.X, -0.7f, 0.7f) * BaseLookRate);
   }
   else
   {
@@ -223,21 +284,18 @@ void AShooterCharacter::Look(const FInputActionValue &Value)
 
 void AShooterCharacter::Jump(const FInputActionValue &Value)
 {
-  Super::Jump();
+  // Super::Jump();
   bAiming = false;
 }
 
 void AShooterCharacter::Aim(const FInputActionValue &Value)
 {
-  if (CombatState == ECombatState::ECS_Sprinting)
-    return;
-
   bAiming = Value.Get<bool>();
 
   if (
-      GetCharacterMovement()->IsFalling() ||
-      CombatState == ECombatState::ECS_Reloading ||
-      CombatState == ECombatState::ECS_Equipping)
+      GetCharacterMovement()->IsFalling() || 
+      (CombatState != ECombatState::ECS_Unoccupied &&
+      CombatState != ECombatState::ECS_FireTimerInProgress))
   {
     bAiming = false;
   }
@@ -294,36 +352,42 @@ void AShooterCharacter::Crouch(const FInputActionValue &Value)
 
 void AShooterCharacter::Sprint(const FInputActionValue &Value)
 {
-  if (GetCharacterMovement()->IsFalling() || CombatState == ECombatState::ECS_Dodging)
+  const bool bSprintableState = CombatState != ECombatState::ECS_Dodging && CombatState != ECombatState::ECS_Staggered;
+
+  if (GetCharacterMovement()->IsFalling() || !bSprintableState || Stamina < 15.f)
     return;
 
   if (CombatState != ECombatState::ECS_Sprinting)
   {
     CombatState = ECombatState::ECS_Sprinting;
-
-    GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed * 1.5f;
   }
   else
   {
     CombatState = ECombatState::ECS_Unoccupied;
-
-    GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
   }
 }
 
 void AShooterCharacter::Dodge(const FInputActionValue &Value)
 {
-  if (GetCharacterMovement()->IsFalling() || CombatState == ECombatState::ECS_Dodging || !bCanDodge)
+  const bool bDodgeableState = CombatState != ECombatState::ECS_Dodging && CombatState != ECombatState::ECS_Staggered;
+
+  if (GetCharacterMovement()->IsFalling() || !bDodgeableState || !bCanDodge || Stamina <= 30.f)
     return;
 
-  ResetCombatState(ECombatState::ECS_Dodging);
+  if (CombatState == ECombatState::ECS_Reloading)
+  {
+    EquippedWeapon->SetMovingClip(false);
+  }
+
+  CombatState = ECombatState::ECS_Dodging;
 
   int32 Direction = GetMovementInputDirection(MovementInputX, MovementInputY);
 
   PlayDodgeAnimation(Direction);
   StartDodgeTimer();
+  ConsumeStamina(30.f);
+  bInvulnerable = true;
   bCanDodge = false;
-  // Invulnerability
 }
 
 void AShooterCharacter::SwitchWeapon1(const FInputActionValue &Value)
@@ -478,7 +542,7 @@ void AShooterCharacter::AutoFireReset()
     CombatState = ECombatState::ECS_Unoccupied;
   }
 
-  if (!EquippedWeapon)
+  if (!EquippedWeapon || CombatState != ECombatState::ECS_Unoccupied)
     return;
 
   if (WeaponHasAmmo())
@@ -1146,7 +1210,10 @@ void AShooterCharacter::GrabWeapon()
 
 void AShooterCharacter::FinishEquipping()
 {
-  CombatState = ECombatState::ECS_Unoccupied;
+  if (CombatState == ECombatState::ECS_Equipping)
+  {
+    CombatState = ECombatState::ECS_Unoccupied;
+  }
 }
 
 void AShooterCharacter::TriggerRecoil()
@@ -1165,40 +1232,12 @@ void AShooterCharacter::TriggerRecoil()
   }
 }
 
-void AShooterCharacter::ResetCombatState(ECombatState NewCombatState)
-{
-  if (!InInterruptableCombatState())
-    return;
-
-  switch (CombatState)
-  {
-  case ECombatState::ECS_Sprinting:
-  {
-    EndSprint();
-    break;
-  }
-  case ECombatState::ECS_Equipping:
-  case ECombatState::ECS_Reloading:
-  {
-    GetMesh()->GetAnimInstance()->StopAllMontages(0);
-    break;
-  }
-  }
-
-  CombatState = NewCombatState;
-}
-
-bool AShooterCharacter::InInterruptableCombatState()
-{
-  return CombatState == ECombatState::ECS_Unoccupied ||
-         CombatState == ECombatState::ECS_Equipping ||
-         CombatState == ECombatState::ECS_Reloading ||
-         CombatState == ECombatState::ECS_Sprinting;
-}
-
 void AShooterCharacter::FinishDodge()
 {
-  CombatState = ECombatState::ECS_Unoccupied;
+  if (CombatState == ECombatState::ECS_Dodging)
+  {
+    CombatState = ECombatState::ECS_Unoccupied;
+  }
 }
 
 int32 AShooterCharacter::GetMovementInputDirection(int32 InputX, int32 InputY)
@@ -1268,58 +1307,145 @@ int32 AShooterCharacter::GetMovementInputDirection(int32 InputX, int32 InputY)
 
 void AShooterCharacter::PlayDodgeAnimation(int32 Direction)
 {
-  UAnimInstance *AnimInstance = GetMesh()->GetAnimInstance();
-  if (AnimInstance && DodgeMontage)
-  {
-    AnimInstance->Montage_Play(DodgeMontage);
+  FName DodgeSection = FName("DodgeBackward");
 
     switch (Direction)
     {
-    case 0: // Forward
+      case 0: // Forward
+      {
+        DodgeSection = FName("DodgeForward");
+        break;
+      }
+      case 45: // Forward-Right
+      {
+        DodgeSection = FName("DodgeFR");
+        break;
+      }
+      case 90: // Right
+      {
+        DodgeSection = FName("DodgeRight");
+        break;
+      }
+      case 135: // Backward-Right
+      {
+        DodgeSection = FName("DodgeBR");
+        break;
+      }
+      case 180: // Backward
+      {
+        DodgeSection = FName("DodgeBackward");
+        break;
+      }
+      case 225: // Backward-Left
+      {
+        DodgeSection = FName("DodgeBL");
+        break;
+      }
+      case 270: // Left
+      {
+        DodgeSection = FName("DodgeLeft");
+        break;
+      }
+      case 315: // Forward-Left
+      {
+        DodgeSection = FName("DodgeFL");
+        break;
+      }
+    }
+
+  PlayAnimationMontage(DodgeMontage, DodgeSection);
+}
+
+void AShooterCharacter::EndStagger()
+{
+  if (CombatState == ECombatState::ECS_Staggered)
+  {
+    CombatState = ECombatState::ECS_Unoccupied;
+  }
+}
+
+void AShooterCharacter::HandleSprint(float DeltaTime)
+{
+  if (CombatState == ECombatState::ECS_Sprinting)
+  {
+    GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed * 1.5;
+    ConsumeStamina(12.5f * DeltaTime);
+
+    if (Stamina <= 0)
     {
-      AnimInstance->Montage_JumpToSection(FName("DodgeForward"));
-      break;
+      CombatState = ECombatState::ECS_Unoccupied;
     }
-    case 45: // Forward-Right
-    {
-      AnimInstance->Montage_JumpToSection(FName("DodgeFR"));
-      break;
-    }
-    case 90: // Right
-    {
-      AnimInstance->Montage_JumpToSection(FName("DodgeRight"));
-      break;
-    }
-    case 135: // Backward-Right
-    {
-      AnimInstance->Montage_JumpToSection(FName("DodgeBR"));
-      break;
-    }
-    case 180: // Backward
-    {
-      AnimInstance->Montage_JumpToSection(FName("DodgeBackward"));
-      break;
-    }
-    case 225: // Backward-Left
-    {
-      AnimInstance->Montage_JumpToSection(FName("DodgeBL"));
-      break;
-    }
-    case 270: // Left
-    {
-      AnimInstance->Montage_JumpToSection(FName("DodgeLeft"));
-      break;
-    }
-    case 315: // Forward-Left
-    {
-      AnimInstance->Montage_JumpToSection(FName("DodgeFL"));
-      break;
-    }
-    default:
-    {
-      AnimInstance->Montage_JumpToSection(FName("DodgeBackward"));
-    }
-    }
+  }
+  else
+  {
+    GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
+  }
+}
+
+void AShooterCharacter::HealthRegenReset()
+{
+  bCanRegenerateHealth = true;
+}
+
+void AShooterCharacter::StaminaRegenReset()
+{
+  bCanRegenerateStamina = true;
+}
+
+void AShooterCharacter::RegenerateHealth(float DeltaTime)
+{
+  if (!bCanRegenerateHealth || Health == MaxHealth) return;
+
+  if (Health + (HealthRegen * DeltaTime) > MaxHealth)
+  {
+    Health = MaxHealth;
+  }
+  else
+  {
+    Health += HealthRegen * DeltaTime;
+  }
+}
+
+void AShooterCharacter::RecoverStamina(float DeltaTime)
+{
+  if (!bCanRegenerateStamina || Stamina == MaxStamina) return;
+
+  if (Stamina + (StaminaRegen * DeltaTime) > MaxStamina)
+  {
+    Stamina = MaxStamina;
+  }
+  else
+  {
+    Stamina += StaminaRegen * DeltaTime;
+  }
+}
+
+void AShooterCharacter::ConsumeStamina(float Amount)
+{
+  if (Stamina - Amount < 0)
+  {
+    Stamina = 0;
+  }
+  else
+  {
+    Stamina -= Amount;
+  }
+
+  bCanRegenerateStamina = false;
+  GetWorldTimerManager().SetTimer(
+      StaminaRegenStartTimer,
+      this,
+      &AShooterCharacter::StaminaRegenReset,
+      StaminaRegenCooldown);
+}
+
+void AShooterCharacter::PlayAnimationMontage(UAnimMontage* Montage, FName Section, float PlayRate)
+{
+  UAnimInstance *AnimInstance = GetMesh()->GetAnimInstance();
+  if (AnimInstance && Montage)
+  {
+    AnimInstance->Montage_Play(Montage, PlayRate);
+    AnimInstance->Montage_JumpToSection(Section);
   }
 }
 
@@ -1333,6 +1459,10 @@ void AShooterCharacter::Tick(float DeltaTime)
   CalculateCrosshairSpread(DeltaTime);
   TraceForItems();
   ApplyRecoil(DeltaTime);
+  HandleSprint(DeltaTime);
+
+  RegenerateHealth(DeltaTime);
+  RecoverStamina(DeltaTime);
 }
 
 // Called to bind functionality to input
@@ -1372,7 +1502,10 @@ void AShooterCharacter::SetupPlayerInputComponent(UInputComponent *PlayerInputCo
 void AShooterCharacter::FinishReloading()
 {
   // Update the combat state
-  CombatState = ECombatState::ECS_Unoccupied;
+  if (CombatState == ECombatState::ECS_Reloading)
+  {
+    CombatState = ECombatState::ECS_Unoccupied;
+  }
 
   if (!EquippedWeapon)
     return;
@@ -1527,4 +1660,11 @@ void AShooterCharacter::StartDodgeTimer()
 void AShooterCharacter::ResetDodgeTimer()
 {
   bCanDodge = true;
+}
+
+void AShooterCharacter::Stagger()
+{
+  CombatState = ECombatState::ECS_Staggered;
+
+  PlayAnimationMontage(HitReactMontage, FName("HitReactRight"));
 }

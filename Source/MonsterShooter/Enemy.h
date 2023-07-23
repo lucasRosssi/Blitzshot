@@ -77,15 +77,7 @@ protected:
   FName GetAttackSectionName();
 
   UFUNCTION()
-  void OnLeftWeaponOverlap(
-      UPrimitiveComponent *OverlappedComponent,
-      AActor *OtherActor,
-      UPrimitiveComponent *OtherComp,
-      int32 OtherBodyIndex,
-      bool bFromSweep,
-      const FHitResult &SweepResult);
-  UFUNCTION()
-  void OnRightWeaponOverlap(
+  void OnWeaponOverlap(
       UPrimitiveComponent *OverlappedComponent,
       AActor *OtherActor,
       UPrimitiveComponent *OtherComp,
@@ -103,7 +95,9 @@ protected:
   UFUNCTION(BlueprintCallable)
   void DeactivateRightWeapon();
 
-  void DoDamage(AActor *Target);
+  void DoDamage(AActor *Target, const FHitResult &SweepResult);
+
+  void ResetCanAttack();
 
 private:
   /** Particles to spawn when hit by bullets */
@@ -220,6 +214,16 @@ private:
   /** Damage dealt by basic attacks */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
   float BasicAttackDamage;
+
+  /** Whether the enemy can attack or not */
+  UPROPERTY(VisibleAnywhere, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+  bool bCanAttack;
+
+  FTimerHandle AttackWaitTimer;
+
+  /** Wait time between attacks */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+  float AttackWaitTime;
 
 public:
   // Called every frame
