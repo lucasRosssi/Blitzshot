@@ -99,6 +99,9 @@ protected:
 
   void ResetCanAttack();
 
+  UFUNCTION(BlueprintCallable)
+  void FinishDeath();
+
 private:
   /** Particles to spawn when hit by bullets */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
@@ -225,6 +228,14 @@ private:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
   float AttackWaitTime;
 
+  /** Death anim montage */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+  UAnimMontage *DeathMontage;
+
+  /** Whether the enemy is dead or not */
+  UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+  bool bDead;
+
 public:
   // Called every frame
   virtual void Tick(float DeltaTime) override;
@@ -245,4 +256,6 @@ public:
   FORCEINLINE UBehaviorTree *GetBehaviorTree() const { return BehaviorTree; }
 
   FORCEINLINE void SetBalance(float Amount) { Balance = Amount; }
+  FORCEINLINE float GetHealth() const { return Health; }
+  FORCEINLINE bool IsDead() const { return bDead; }
 };

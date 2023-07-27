@@ -16,31 +16,34 @@ struct FCharacterProperties : public FTableRowBase
   GENERATED_BODY()
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
-  USkeletalMesh* SkeletalMesh;
+  USkeletalMesh *SkeletalMesh;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
-  UClass* AnimationBlueprint;
+  UClass *AnimationBlueprint;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
-  class UAnimMontage* HipFireMontage;
+  class UAnimMontage *HipFireMontage;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
-  UAnimMontage* AimFireMontage;
+  UAnimMontage *AimFireMontage;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
-  UAnimMontage* ReloadMontage;
+  UAnimMontage *ReloadMontage;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
-  UAnimMontage* EquipMontage;
+  UAnimMontage *EquipMontage;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
-  UAnimMontage* DodgeMontage;
+  UAnimMontage *DodgeMontage;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
-  UAnimMontage* HitReactMontage;
+  UAnimMontage *HitReactMontage;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
   FVector MeshScale;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UAnimMontage *DeathMontage;
 };
 
 UENUM(BlueprintType)
@@ -76,7 +79,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
     int32, CurrentSlotIndex,
     int32, NewSlotIndex);
 
-    UCLASS() class MONSTERSHOOTER_API AShooterCharacter : public ACharacter
+UCLASS()
+class MONSTERSHOOTER_API AShooterCharacter : public ACharacter
 {
   GENERATED_BODY()
 
@@ -266,7 +270,12 @@ protected:
 
   void ConsumeStamina(float Amount);
 
-  void PlayAnimationMontage(UAnimMontage* Montage, FName Section, float PlayRate = 1.0f);
+  void PlayAnimationMontage(UAnimMontage *Montage, FName Section, float PlayRate = 1.0f);
+
+  void Die();
+
+  UFUNCTION(BlueprintCallable)
+  void FinishDeath();
 
 public:
   // Called every frame
@@ -524,7 +533,7 @@ private:
 
   /** Blood splatter particles spawned when being hit */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
-  UParticleSystem* BloodParticles;
+  UParticleSystem *BloodParticles;
 
   /** Montage played when getting hit */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
@@ -560,6 +569,14 @@ private:
   float StaminaRegenCooldown;
   bool bCanRegenerateStamina;
   FTimerHandle StaminaRegenStartTimer;
+
+  /** Montage for playing death animations */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  UAnimMontage *DeathMontage;
+
+  /** Whether the character is dead */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  bool bDead;
 
 public:
   // Returns CameraBoom subobject
@@ -598,9 +615,10 @@ public:
   void StartEquipSoundTimer();
 
   FORCEINLINE USoundCue *GetMeleeImpactSound() const { return MeleeImpactSound; }
-  FORCEINLINE UParticleSystem* GetBloodParticles() const { return BloodParticles; }
+  FORCEINLINE UParticleSystem *GetBloodParticles() const { return BloodParticles; }
 
   FORCEINLINE bool IsInvulnerable() const { return bInvulnerable; }
+  FORCEINLINE bool IsDead() const { return bDead; }
 
   void Stagger();
 };

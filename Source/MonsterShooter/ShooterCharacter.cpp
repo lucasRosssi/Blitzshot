@@ -79,7 +79,8 @@ AShooterCharacter::AShooterCharacter() : bAiming(false),
                                          Stamina(MaxStamina),
                                          StaminaRegen(20.f),
                                          StaminaRegenCooldown(3.0f),
-                                         bCanRegenerateStamina(true)
+                                         bCanRegenerateStamina(true),
+                                         bDead(false)
 {
   // Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
   PrimaryActorTick.bCanEverTick = true;
@@ -133,14 +134,8 @@ float AShooterCharacter::TakeDamage(
     class AController *EventInstigator,
     AActor *DamageCauser)
 {
-  if (Health - DamageAmount <= 0.f)
-  {
-    Health = 0.f;
-  }
-  else
-  {
-    Health -= DamageAmount;
-  }
+  if (bDead)
+    return 0.f;
 
   bCanRegenerateHealth = false;
   GetWorldTimerManager().SetTimer(
@@ -148,6 +143,17 @@ float AShooterCharacter::TakeDamage(
       this,
       &AShooterCharacter::HealthRegenReset,
       HealthRegenCooldown);
+
+  if (Health - DamageAmount <= 0.f)
+  {
+    Health = 0.f;
+    Die();
+    GetWorldTimerManager().ClearTimer(HealthRegenStartTimer);
+  }
+  else
+  {
+    Health -= DamageAmount;
+  }
 
   return DamageAmount;
 }
@@ -214,7 +220,7 @@ void AShooterCharacter::OnConstruction(const FTransform &Transform)
     if (CharacterDataRow)
     {
       GetMesh()->SetAnimInstanceClass(CharacterDataRow->AnimationBlueprint);
-      
+
       GetMesh()->SetSkeletalMeshAsset(CharacterDataRow->SkeletalMesh);
       GetMesh()->SetWorldScale3D(CharacterDataRow->MeshScale);
       HipFireMontage = CharacterDataRow->HipFireMontage;
@@ -223,6 +229,7 @@ void AShooterCharacter::OnConstruction(const FTransform &Transform)
       EquipMontage = CharacterDataRow->EquipMontage;
       DodgeMontage = CharacterDataRow->DodgeMontage;
       HitReactMontage = CharacterDataRow->HitReactMontage;
+      DeathMontage = CharacterDataRow->DeathMontage;
     }
   }
 }
@@ -251,7 +258,7 @@ void AShooterCharacter::Move(const FInputActionValue &Value)
   const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
   const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-  const bool bMoveableState = CombatState != ECombatState::ECS_Dodging && CombatState != ECombatState::ECS_Staggered;
+  const bool bMoveableState = CombatState != ECombatState::ECS_Dodging;
 
   if (bMoveableState)
   {
@@ -293,9 +300,9 @@ void AShooterCharacter::Aim(const FInputActionValue &Value)
   bAiming = Value.Get<bool>();
 
   if (
-      GetCharacterMovement()->IsFalling() || 
+      GetCharacterMovement()->IsFalling() ||
       (CombatState != ECombatState::ECS_Unoccupied &&
-      CombatState != ECombatState::ECS_FireTimerInProgress))
+       CombatState != ECombatState::ECS_FireTimerInProgress))
   {
     bAiming = false;
   }
@@ -588,6 +595,11 @@ void AShooterCharacter::AutoFireReset()
 
 void AShooterCharacter::CameraInterpZoom(float DeltaTime)
 {
+  if (bDead)
+  {
+    // Cool death animation camera
+  }
+
   // Set current camera field of view
   if (bAiming)
   {
@@ -1007,7 +1019,7 @@ void AShooterCharacter::SendBullet()
         }
 
         AEnemy *HitEnemy = Cast<AEnemy>(BeamHitResult.GetActor());
-        if (HitEnemy)
+        if (HitEnemy && !HitEnemy->IsDead())
         {
           int32 Damage{};
           bool bWeakspot = false;
@@ -1031,7 +1043,10 @@ void AShooterCharacter::SendBullet()
               UDamageType::StaticClass());
 
           HitEnemy->ShowHitNumber(Damage, BeamHitResult.Location, bWeakspot);
-          HitEnemy->TakeBalanceDamage(EquippedWeapon->GetBalanceDamage());
+          if (HitEnemy->GetHealth() - Damage > 0)
+          {
+            HitEnemy->TakeBalanceDamage(EquippedWeapon->GetBalanceDamage());
+          }
         }
       }
 
@@ -1309,49 +1324,49 @@ void AShooterCharacter::PlayDodgeAnimation(int32 Direction)
 {
   FName DodgeSection = FName("DodgeBackward");
 
-    switch (Direction)
-    {
-      case 0: // Forward
-      {
-        DodgeSection = FName("DodgeForward");
-        break;
-      }
-      case 45: // Forward-Right
-      {
-        DodgeSection = FName("DodgeFR");
-        break;
-      }
-      case 90: // Right
-      {
-        DodgeSection = FName("DodgeRight");
-        break;
-      }
-      case 135: // Backward-Right
-      {
-        DodgeSection = FName("DodgeBR");
-        break;
-      }
-      case 180: // Backward
-      {
-        DodgeSection = FName("DodgeBackward");
-        break;
-      }
-      case 225: // Backward-Left
-      {
-        DodgeSection = FName("DodgeBL");
-        break;
-      }
-      case 270: // Left
-      {
-        DodgeSection = FName("DodgeLeft");
-        break;
-      }
-      case 315: // Forward-Left
-      {
-        DodgeSection = FName("DodgeFL");
-        break;
-      }
-    }
+  switch (Direction)
+  {
+  case 0: // Forward
+  {
+    DodgeSection = FName("DodgeForward");
+    break;
+  }
+  case 45: // Forward-Right
+  {
+    DodgeSection = FName("DodgeFR");
+    break;
+  }
+  case 90: // Right
+  {
+    DodgeSection = FName("DodgeRight");
+    break;
+  }
+  case 135: // Backward-Right
+  {
+    DodgeSection = FName("DodgeBR");
+    break;
+  }
+  case 180: // Backward
+  {
+    DodgeSection = FName("DodgeBackward");
+    break;
+  }
+  case 225: // Backward-Left
+  {
+    DodgeSection = FName("DodgeBL");
+    break;
+  }
+  case 270: // Left
+  {
+    DodgeSection = FName("DodgeLeft");
+    break;
+  }
+  case 315: // Forward-Left
+  {
+    DodgeSection = FName("DodgeFL");
+    break;
+  }
+  }
 
   PlayAnimationMontage(DodgeMontage, DodgeSection);
 }
@@ -1394,7 +1409,8 @@ void AShooterCharacter::StaminaRegenReset()
 
 void AShooterCharacter::RegenerateHealth(float DeltaTime)
 {
-  if (!bCanRegenerateHealth || Health == MaxHealth) return;
+  if (!bCanRegenerateHealth || Health == MaxHealth)
+    return;
 
   if (Health + (HealthRegen * DeltaTime) > MaxHealth)
   {
@@ -1408,7 +1424,8 @@ void AShooterCharacter::RegenerateHealth(float DeltaTime)
 
 void AShooterCharacter::RecoverStamina(float DeltaTime)
 {
-  if (!bCanRegenerateStamina || Stamina == MaxStamina) return;
+  if (!bCanRegenerateStamina || Stamina == MaxStamina)
+    return;
 
   if (Stamina + (StaminaRegen * DeltaTime) > MaxStamina)
   {
@@ -1439,7 +1456,7 @@ void AShooterCharacter::ConsumeStamina(float Amount)
       StaminaRegenCooldown);
 }
 
-void AShooterCharacter::PlayAnimationMontage(UAnimMontage* Montage, FName Section, float PlayRate)
+void AShooterCharacter::PlayAnimationMontage(UAnimMontage *Montage, FName Section, float PlayRate)
 {
   UAnimInstance *AnimInstance = GetMesh()->GetAnimInstance();
   if (AnimInstance && Montage)
@@ -1447,6 +1464,43 @@ void AShooterCharacter::PlayAnimationMontage(UAnimMontage* Montage, FName Sectio
     AnimInstance->Montage_Play(Montage, PlayRate);
     AnimInstance->Montage_JumpToSection(Section);
   }
+}
+
+void AShooterCharacter::Die()
+{
+  APlayerController *PC = UGameplayStatics::GetPlayerController(this, 0);
+  if (PC)
+  {
+    DisableInput(PC);
+  }
+
+  bDead = true;
+  bAiming = false;
+  bCanRegenerateHealth = false;
+  bCanRegenerateStamina = false;
+
+  const int32 DeathAnimRoll = FMath::RandRange(1, 3);
+  FName MontageSection;
+
+  switch (DeathAnimRoll)
+  {
+  case 1:
+    MontageSection = FName("DeathA");
+    break;
+  case 2:
+    MontageSection = FName("DeathB");
+    break;
+  case 3:
+    MontageSection = FName("DeathC");
+    break;
+  }
+
+  PlayAnimationMontage(DeathMontage, MontageSection);
+}
+
+void AShooterCharacter::FinishDeath()
+{
+  GetMesh()->bPauseAnims = true;
 }
 
 // Called every frame
@@ -1664,7 +1718,10 @@ void AShooterCharacter::ResetDodgeTimer()
 
 void AShooterCharacter::Stagger()
 {
+  if (bDead)
+    return;
+
   CombatState = ECombatState::ECS_Staggered;
 
-  PlayAnimationMontage(HitReactMontage, FName("HitReactRight"));
+  PlayAnimationMontage(HitReactMontage, FName("HitReactRight"), 1.25f);
 }

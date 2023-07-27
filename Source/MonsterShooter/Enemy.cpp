@@ -31,7 +31,8 @@ AEnemy::AEnemy() : Health(100.f),
                    AttackRFast(TEXT("AttackRFast")),
                    BasicAttackDamage(20.f),
                    bCanAttack(true),
-                   AttackWaitTime(1.f)
+                   AttackWaitTime(1.f),
+                   bDead(false)
 {
   // Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
   PrimaryActorTick.bCanEverTick = true;
@@ -121,7 +122,22 @@ void AEnemy::ShowHealthBar_Implementation()
 
 void AEnemy::Die()
 {
+  if (bDead)
+    return;
+
+  bDead = true;
   HideHealthBar();
+
+  PlayMontage(DeathMontage, FName("DeathA"));
+
+  if (EnemyController)
+  {
+    EnemyController->GetBlackboardComponent()->SetValueAsBool(
+        FName("Dead"),
+        true);
+
+    EnemyController->StopMovement();
+  }
 }
 
 void AEnemy::PlayMontage(UAnimMontage *Montage, FName Section, float PlayRate)
@@ -246,16 +262,16 @@ void AEnemy::CombatRangeEndOverlap(
 
 void AEnemy::AttackPlayer(FName MontageSection)
 {
-  if (!bCanAttack) return;
+  if (!bCanAttack)
+    return;
 
   PlayMontage(AttackMontage, MontageSection);
   bCanAttack = false;
   GetWorldTimerManager().SetTimer(
-    AttackWaitTimer,
-    this,
-    &AEnemy::ResetCanAttack,
-    AttackWaitTime
-  );
+      AttackWaitTimer,
+      this,
+      &AEnemy::ResetCanAttack,
+      AttackWaitTime);
 
   if (EnemyController)
   {
@@ -314,10 +330,9 @@ void AEnemy::DoDamage(AActor *Target, const FHitResult &SweepResult)
     const int32 BoneIndex = Character->GetMesh()->GetBoneIndex(SweepResult.BoneName);
 
     UGameplayStatics::SpawnEmitterAtLocation(
-      GetWorld(),
-      Character->GetBloodParticles(),
-      SweepResult.ImpactPoint
-    );
+        GetWorld(),
+        Character->GetBloodParticles(),
+        SweepResult.ImpactPoint);
   }
 
   Character->Stagger();
@@ -364,6 +379,13 @@ void AEnemy::ResetCanAttack()
   }
 }
 
+void AEnemy::FinishDeath()
+{
+  GetMesh()->bPauseAnims = true;
+
+  SetLifeSpan(10.f);
+}
+
 // Called every frame
 void AEnemy::Tick(float DeltaTime)
 {
@@ -388,7 +410,11 @@ void AEnemy::BulletHit_Implementation(FHitResult HitResult)
     UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactParticles, HitResult.Location, FRotator(0.f), true);
   }
 
+  if (bDead)
+    return;
+
   ShowHealthBar();
+
   if (bStaggered)
     return;
 
@@ -401,6 +427,13 @@ void AEnemy::BulletHit_Implementation(FHitResult HitResult)
 
 float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEvent, AController *EventInstigator, AActor *DamageCauser)
 {
+  if (EnemyController)
+  {
+    EnemyController->GetBlackboardComponent()->SetValueAsObject(
+        FName("Target"),
+        EventInstigator->GetPawn());
+  }
+
   if (Health - DamageAmount <= 0.f)
   {
     Health = 0;
