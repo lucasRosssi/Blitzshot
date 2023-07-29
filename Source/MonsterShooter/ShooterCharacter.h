@@ -260,10 +260,6 @@ protected:
 
   void HandleSprint(float DeltaTime);
 
-  void HealthRegenReset();
-
-  void RegenerateHealth(float DeltaTime);
-
   void StaminaRegenReset();
 
   void RecoverStamina(float DeltaTime);
@@ -520,13 +516,6 @@ private:
   int32 MovementInputX;
   int32 MovementInputY;
 
-  /** Character maximum health */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
-  float MaxHealth;
-  /** Character current health */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
-  float Health;
-
   /** Sound played when the character is hit by a melee attack */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
   class USoundCue *MeleeImpactSound;
@@ -545,15 +534,6 @@ private:
   /** Whether the character can be hit or not */
   UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
   bool bInvulnerable;
-
-  /** Amount of health recovered per regen */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
-  float HealthRegen;
-  /** Amount of time after taking damage that the health will start to recover */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
-  float HealthRegenCooldown;
-  bool bCanRegenerateHealth;
-  FTimerHandle HealthRegenStartTimer;
 
   /** Character maximum stamina */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
@@ -577,6 +557,9 @@ private:
   /** Whether the character is dead */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
   bool bDead;
+
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  class UHealthComponent *HealthComponent;
 
 public:
   // Returns CameraBoom subobject

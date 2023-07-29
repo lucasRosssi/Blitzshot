@@ -12,11 +12,10 @@
 #include "ShooterCharacter.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/BoxComponent.h"
+#include "HealthComponent.h"
 
 // Sets default values
-AEnemy::AEnemy() : Health(100.f),
-                   MaxHealth(100.f),
-                   HealthBarDisplayTime(4.f),
+AEnemy::AEnemy() : HealthBarDisplayTime(4.f),
                    bCanHitReact(true),
                    HitReactTimeMin(0.1f),
                    HitReactTimeMax(0.5f),
@@ -37,8 +36,12 @@ AEnemy::AEnemy() : Health(100.f),
   // Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
   PrimaryActorTick.bCanEverTick = true;
 
+  HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("Health Component"));
+  HealthComponent->MaxHealth = 100.f;
+  HealthComponent->bHealthRegenActive = false,
+
   // Create the Agro Sphere
-  AgroSphere = CreateDefaultSubobject<USphereComponent>(TEXT("AgroSphere"));
+      AgroSphere = CreateDefaultSubobject<USphereComponent>(TEXT("AgroSphere"));
   AgroSphere->SetupAttachment(GetRootComponent());
 
   // Create the Combat Range Sphere
@@ -107,6 +110,8 @@ void AEnemy::BeginPlay()
 
     EnemyController->RunBehaviorTree(BehaviorTree);
   }
+
+  HealthComponent->Health = HealthComponent->MaxHealth;
 }
 
 void AEnemy::ShowHealthBar_Implementation()
@@ -129,6 +134,8 @@ void AEnemy::Die()
   HideHealthBar();
 
   PlayMontage(DeathMontage, FName("DeathA"));
+
+  SetActorEnableCollision(false);
 
   if (EnemyController)
   {
@@ -434,14 +441,11 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEv
         EventInstigator->GetPawn());
   }
 
-  if (Health - DamageAmount <= 0.f)
+  HealthComponent->TakeDamage(DamageAmount);
+
+  if (HealthComponent->bDead)
   {
-    Health = 0;
     Die();
-  }
-  else
-  {
-    Health -= DamageAmount;
   }
 
   return DamageAmount;
@@ -461,4 +465,9 @@ void AEnemy::TakeBalanceDamage(float Amount)
   {
     Balance -= Amount;
   }
+}
+
+float AEnemy::GetHealth() const
+{
+  return HealthComponent->Health;
 }

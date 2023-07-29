@@ -111,14 +111,6 @@ private:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
   class USoundCue *ImpactSound;
 
-  /** Current health of the enemy */
-  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat", meta = (AllowPrivateAccess = "true"))
-  float Health;
-
-  /** Maximum health of the enemy */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
-  float MaxHealth;
-
   /** Name of the bone that represents the weakspot */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
   FString WeakspotBone;
@@ -236,6 +228,9 @@ private:
   UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
   bool bDead;
 
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+  class UHealthComponent *HealthComponent;
+
 public:
   // Called every frame
   virtual void Tick(float DeltaTime) override;
@@ -256,6 +251,6 @@ public:
   FORCEINLINE UBehaviorTree *GetBehaviorTree() const { return BehaviorTree; }
 
   FORCEINLINE void SetBalance(float Amount) { Balance = Amount; }
-  FORCEINLINE float GetHealth() const { return Health; }
+  float GetHealth() const;
   FORCEINLINE bool IsDead() const { return bDead; }
 };

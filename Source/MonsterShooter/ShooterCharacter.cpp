@@ -21,6 +21,9 @@
 #include "Ammo.h"
 #include "BulletHitInterface.h"
 #include "Enemy.h"
+#include "EnemyController.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "HealthComponent.h"
 
 // Sets default values
 AShooterCharacter::AShooterCharacter() : bAiming(false),
@@ -69,12 +72,7 @@ AShooterCharacter::AShooterCharacter() : bAiming(false),
                                          RecoilAmount(0.8f),
                                          DodgeMontageSection(TEXT("DodgeBackward")),
                                          bCanDodge(true),
-                                         MaxHealth(100.f),
-                                         Health(MaxHealth),
                                          bInvulnerable(false),
-                                         HealthRegen(10.0f),
-                                         HealthRegenCooldown(5.0f),
-                                         bCanRegenerateHealth(true),
                                          MaxStamina(100.f),
                                          Stamina(MaxStamina),
                                          StaminaRegen(20.f),
@@ -97,8 +95,14 @@ AShooterCharacter::AShooterCharacter() : bAiming(false),
   FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach camera to end of boom
   FollowCamera->bUsePawnControlRotation = false;                              // Camera does not rotate relative to arm
 
+  HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
+  HealthComponent->MaxHealth = 100.f;
+  HealthComponent->HealthRegen = 10.0f,
+  HealthComponent->HealthRegenCooldown = 5.0f,
+  HealthComponent->bHealthRegenActive = true,
+
   // Don't rotate when the controller rotates. Let the controller only affect the camera
-  bUseControllerRotationPitch = false;
+      bUseControllerRotationPitch = false;
   bUseControllerRotationYaw = true;
   bUseControllerRotationRoll = false;
 
@@ -137,22 +141,19 @@ float AShooterCharacter::TakeDamage(
   if (bDead)
     return 0.f;
 
-  bCanRegenerateHealth = false;
-  GetWorldTimerManager().SetTimer(
-      HealthRegenStartTimer,
-      this,
-      &AShooterCharacter::HealthRegenReset,
-      HealthRegenCooldown);
+  HealthComponent->TakeDamage(DamageAmount);
 
-  if (Health - DamageAmount <= 0.f)
+  if (HealthComponent->bDead)
   {
-    Health = 0.f;
     Die();
-    GetWorldTimerManager().ClearTimer(HealthRegenStartTimer);
-  }
-  else
-  {
-    Health -= DamageAmount;
+
+    auto EnemyController = Cast<AEnemyController>(EventInstigator);
+    if (EnemyController)
+    {
+      EnemyController->GetBlackboardComponent()->SetValueAsBool(
+          FName(TEXT("CharacterIsDead")),
+          true);
+    }
   }
 
   return DamageAmount;
@@ -175,6 +176,11 @@ void AShooterCharacter::BeginPlay()
     {
       Subsystem->AddMappingContext(PlayerMappingContext, 0);
     }
+  }
+
+  if (HealthComponent)
+  {
+    HealthComponent->Health = HealthComponent->MaxHealth;
   }
 
   GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
@@ -1397,29 +1403,9 @@ void AShooterCharacter::HandleSprint(float DeltaTime)
   }
 }
 
-void AShooterCharacter::HealthRegenReset()
-{
-  bCanRegenerateHealth = true;
-}
-
 void AShooterCharacter::StaminaRegenReset()
 {
   bCanRegenerateStamina = true;
-}
-
-void AShooterCharacter::RegenerateHealth(float DeltaTime)
-{
-  if (!bCanRegenerateHealth || Health == MaxHealth)
-    return;
-
-  if (Health + (HealthRegen * DeltaTime) > MaxHealth)
-  {
-    Health = MaxHealth;
-  }
-  else
-  {
-    Health += HealthRegen * DeltaTime;
-  }
 }
 
 void AShooterCharacter::RecoverStamina(float DeltaTime)
@@ -1476,8 +1462,8 @@ void AShooterCharacter::Die()
 
   bDead = true;
   bAiming = false;
-  bCanRegenerateHealth = false;
   bCanRegenerateStamina = false;
+  SetActorEnableCollision(false);
 
   const int32 DeathAnimRoll = FMath::RandRange(1, 3);
   FName MontageSection;
@@ -1515,7 +1501,6 @@ void AShooterCharacter::Tick(float DeltaTime)
   ApplyRecoil(DeltaTime);
   HandleSprint(DeltaTime);
 
-  RegenerateHealth(DeltaTime);
   RecoverStamina(DeltaTime);
 }
 
