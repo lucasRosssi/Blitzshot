@@ -23,7 +23,10 @@ void UHealthComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ...
+	if (!bHealthRegenActive)
+	{
+		PrimaryComponentTick.bCanEverTick = false;
+	}
 }
 
 void UHealthComponent::HealthRegenReset()
