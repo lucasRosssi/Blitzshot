@@ -1224,7 +1224,29 @@ void AShooterCharacter::ExchangeInventoryItems(int32 CurrentItemIndex, int32 New
 
 void AShooterCharacter::GrabWeapon()
 {
-  EquippedWeapon->SetItemState(EItemState::EIS_PickedUp);
+  const USkeletalMeshSocket *BackSocket1 = GetMesh()->GetSocketByName(FName("Weapon1Socket"));
+  const USkeletalMeshSocket *BackSocket2 = GetMesh()->GetSocketByName(FName("Weapon2Socket"));
+
+  switch (EquippedWeapon->GetSlotIndex())
+  {
+  case 0:
+    if (BackSocket1)
+    {
+      // Attach the Weapon to the back of the character
+      BackSocket1->AttachActor(EquippedWeapon, GetMesh());
+    }
+    break;
+  case 1:
+    if (BackSocket2)
+    {
+      // Attach the Weapon to the back of the character
+      BackSocket2->AttachActor(EquippedWeapon, GetMesh());
+    }
+    break;
+  default:
+    EquippedWeapon->SetItemState(EItemState::EIS_PickedUp);
+  }
+
   EquipWeapon(WeaponToGrab);
   WeaponToGrab = nullptr;
 }
@@ -1614,7 +1636,37 @@ void AShooterCharacter::GetPickupItem(AItem *Item)
     {
       Weapon->SetSlotIndex(Inventory.Num());
       Inventory.Add(Weapon);
-      Weapon->SetItemState(EItemState::EIS_PickedUp);
+
+      const USkeletalMeshSocket *BackSocket1 = GetMesh()->GetSocketByName(FName("Weapon1Socket"));
+      const USkeletalMeshSocket *BackSocket2 = GetMesh()->GetSocketByName(FName("Weapon2Socket"));
+
+      switch (Weapon->GetSlotIndex())
+      {
+      case 0:
+        if (BackSocket1)
+        {
+          // Attach the Weapon to the back of the character
+          BackSocket1->AttachActor(Weapon, GetMesh());
+        }
+        else
+        {
+          Weapon->SetItemState(EItemState::EIS_PickedUp);
+        }
+        break;
+      case 1:
+        if (BackSocket2)
+        {
+          // Attach the Weapon to the back of the character
+          BackSocket2->AttachActor(Weapon, GetMesh());
+        }
+        else
+        {
+          Weapon->SetItemState(EItemState::EIS_PickedUp);
+        }
+        break;
+      default:
+        Weapon->SetItemState(EItemState::EIS_PickedUp);
+      }
     }
     else
     {
