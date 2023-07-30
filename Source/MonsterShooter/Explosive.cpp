@@ -49,11 +49,6 @@ void AExplosive::BulletHit_Implementation(FHitResult HitResult, AActor *Shooter,
   TArray<AActor *> OverlappingActors;
   GetOverlappingActors(OverlappingActors, ACharacter::StaticClass());
 
-  for (auto Actor : OverlappingActors)
-  {
-    UE_LOG(LogTemp, Warning, TEXT("Actor damaged by explosive: %s"), *Actor->GetName());
-  }
-
   UGameplayStatics::ApplyRadialDamageWithFalloff(
       GetWorld(),
       BaseDamage,
@@ -61,7 +56,7 @@ void AExplosive::BulletHit_Implementation(FHitResult HitResult, AActor *Shooter,
       GetActorLocation(),
       OverlapSphere->GetScaledSphereRadius() * 0.3f,
       OverlapSphere->GetScaledSphereRadius(),
-      20.f,
+      100.f,
       UDamageType::StaticClass(),
       {},
       this,

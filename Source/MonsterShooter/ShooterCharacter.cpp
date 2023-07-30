@@ -1477,15 +1477,12 @@ void AShooterCharacter::PlayAnimationMontage(UAnimMontage *Montage, FName Sectio
 
 void AShooterCharacter::Die()
 {
-  APlayerController *PC = UGameplayStatics::GetPlayerController(this, 0);
-  if (PC)
-  {
-    DisableInput(PC);
-  }
-
   bDead = true;
+  CombatState = ECombatState::ECS_Dead;
   bAiming = false;
   bCanRegenerateStamina = false;
+  bFireButtonPressed = false;
+  GetWorldTimerManager().ClearAllTimersForObject(this);
   SetActorEnableCollision(false);
 
   const int32 DeathAnimRoll = FMath::RandRange(1, 3);
@@ -1505,6 +1502,12 @@ void AShooterCharacter::Die()
   }
 
   PlayAnimationMontage(DeathMontage, MontageSection);
+
+  APlayerController *PC = UGameplayStatics::GetPlayerController(this, 0);
+  if (PC)
+  {
+    DisableInput(PC);
+  }
 }
 
 void AShooterCharacter::FinishDeath()
@@ -1596,7 +1599,7 @@ void AShooterCharacter::FinishReloading()
     }
   }
 
-  if (bFireButtonPressed && EquippedWeapon->GetAutomatic())
+  if (bFireButtonPressed && EquippedWeapon->GetAutomatic() && !bDead)
   {
     FireWeapon();
   }

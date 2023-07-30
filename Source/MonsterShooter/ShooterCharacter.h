@@ -59,6 +59,7 @@ enum class ECombatState : uint8
   ECS_Sprinting UMETA(DisplayName = "Sprinting"),
   ECS_Dodging UMETA(DisplayName = "Dodging"),
   ECS_Staggered UMETA(DisplayName = "Staggered"),
+  ECS_Dead UMETA(DisplayName = "Dead"),
 
   ECS_MAX UMETA(DisplayName = "DefaultMAX")
 };
