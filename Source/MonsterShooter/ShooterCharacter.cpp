@@ -236,6 +236,7 @@ void AShooterCharacter::OnConstruction(const FTransform &Transform)
       DodgeMontage = CharacterDataRow->DodgeMontage;
       HitReactMontage = CharacterDataRow->HitReactMontage;
       DeathMontage = CharacterDataRow->DeathMontage;
+      CharacterIcon = CharacterDataRow->CharacterIcon;
     }
   }
 }
@@ -1012,7 +1013,7 @@ void AShooterCharacter::SendBullet()
 
         if (BulletHitInterface)
         {
-          BulletHitInterface->BulletHit_Implementation(BeamHitResult);
+          BulletHitInterface->BulletHit_Implementation(BeamHitResult, this, GetController());
         }
         else if (ImpactParticles) // Default particles
         {

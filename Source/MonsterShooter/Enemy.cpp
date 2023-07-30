@@ -206,14 +206,17 @@ void AEnemy::AgroSphereOverlap(
   if (Character)
   {
     // Set the value of Target Blackboard Key
-    EnemyController->GetBlackboardComponent()->SetValueAsObject(TEXT("Target"), Character);
+    if (EnemyController && EnemyController->GetBlackboardComponent())
+    {
+      EnemyController->GetBlackboardComponent()->SetValueAsObject(TEXT("Target"), Character);
+    }
   }
 }
 
 void AEnemy::SetStaggered(bool Staggered)
 {
   bStaggered = Staggered;
-  if (EnemyController)
+  if (EnemyController && EnemyController->GetBlackboardComponent())
   {
     EnemyController->GetBlackboardComponent()->SetValueAsBool(
         TEXT("Staggered"),
@@ -405,7 +408,7 @@ void AEnemy::SetupPlayerInputComponent(UInputComponent *PlayerInputComponent)
   Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
 
-void AEnemy::BulletHit_Implementation(FHitResult HitResult)
+void AEnemy::BulletHit_Implementation(FHitResult HitResult, AActor *Shooter, AController *InstigatorController)
 {
   if (ImpactSound)
   {
@@ -415,20 +418,6 @@ void AEnemy::BulletHit_Implementation(FHitResult HitResult)
   if (ImpactParticles)
   {
     UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactParticles, HitResult.Location, FRotator(0.f), true);
-  }
-
-  if (bDead)
-    return;
-
-  ShowHealthBar();
-
-  if (bStaggered)
-    return;
-
-  float Chance = FMath::RandRange(0.f, 1.f);
-  if (Chance < 0.25f)
-  {
-    PlayMontage(HitMontage, FName("HitFront"));
   }
 }
 
@@ -446,6 +435,19 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEv
   if (HealthComponent->bDead)
   {
     Die();
+  }
+  else
+  {
+    ShowHealthBar();
+
+    if (!bStaggered)
+    {
+      float Chance = FMath::RandRange(0.f, 1.f);
+      if (Chance < 0.25f)
+      {
+        PlayMontage(HitMontage, FName("HitFront"));
+      }
+    }
   }
 
   return DamageAmount;

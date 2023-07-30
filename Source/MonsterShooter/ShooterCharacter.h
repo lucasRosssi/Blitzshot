@@ -44,6 +44,9 @@ struct FCharacterProperties : public FTableRowBase
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
   UAnimMontage *DeathMontage;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UTexture2D *CharacterIcon;
 };
 
 UENUM(BlueprintType)
@@ -560,6 +563,10 @@ private:
 
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
   class UHealthComponent *HealthComponent;
+
+  /** Icon for the character in the UI */
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI", meta = (AllowPrivateAccess = "true"))
+  UTexture2D *CharacterIcon;
 
 public:
   // Returns CameraBoom subobject
