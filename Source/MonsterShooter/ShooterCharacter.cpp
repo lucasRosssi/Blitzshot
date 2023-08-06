@@ -1477,14 +1477,6 @@ void AShooterCharacter::PlayAnimationMontage(UAnimMontage *Montage, FName Sectio
 
 void AShooterCharacter::Die()
 {
-  bDead = true;
-  CombatState = ECombatState::ECS_Dead;
-  bAiming = false;
-  bCanRegenerateStamina = false;
-  bFireButtonPressed = false;
-  GetWorldTimerManager().ClearAllTimersForObject(this);
-  SetActorEnableCollision(false);
-
   const int32 DeathAnimRoll = FMath::RandRange(1, 3);
   FName MontageSection;
 
@@ -1502,6 +1494,14 @@ void AShooterCharacter::Die()
   }
 
   PlayAnimationMontage(DeathMontage, MontageSection);
+
+  bDead = true;
+  CombatState = ECombatState::ECS_Dead;
+  bAiming = false;
+  bCanRegenerateStamina = false;
+  bFireButtonPressed = false;
+  GetWorldTimerManager().ClearAllTimersForObject(this);
+  SetActorEnableCollision(false);
 
   APlayerController *PC = UGameplayStatics::GetPlayerController(this, 0);
   if (PC)
