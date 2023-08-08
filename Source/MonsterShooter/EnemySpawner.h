@@ -32,14 +32,27 @@ private:
 	class UClass *EnemyClass;
 
 	/** How many will be spawned */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning", meta = (AllowPrivateAccess = "true", ClampMin = 1, UIMin = 1))
 	int32 SpawnCount;
 
 	/** How much time between spawning enemies */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning", meta = (AllowPrivateAccess = "true", ClampMin = 0))
 	float SpawnInterval;
+	FTimerHandle SpawnIntervalTimer;
 
 	/** Sphere for the spawn area */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning", meta = (AllowPrivateAccess = "true"))
 	class USphereComponent *SpawnAreaSphere;
+
+	/** Array of spawned enemies */
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Spawning", meta = (AllowPrivateAccess = "true"))
+	TArray<class AEnemy *> EnemiesSpawned;
+
+	/** If the enemies should spawn already agroed towards the player */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning", meta = (AllowPrivateAccess = "true"))
+	bool bAgressive;
+
+	/** If the enemies should spawn at random locations in the SpawnAreaSphere radius */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning", meta = (AllowPrivateAccess = "true"))
+	bool bInSpawnArea;
 };
