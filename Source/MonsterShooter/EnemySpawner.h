@@ -41,7 +41,7 @@ private:
 	FTimerHandle SpawnIntervalTimer;
 
 	/** Sphere for the spawn area */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	class USphereComponent *SpawnAreaSphere;
 
 	/** Array of spawned enemies */
@@ -55,4 +55,8 @@ private:
 	/** If the enemies should spawn at random locations in the SpawnAreaSphere radius */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning", meta = (AllowPrivateAccess = "true"))
 	bool bInSpawnArea;
+
+	/** Spawns enemies when active */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning", meta = (AllowPrivateAccess = "true"))
+	bool bActive;
 };

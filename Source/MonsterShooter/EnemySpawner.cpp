@@ -11,7 +11,8 @@ AEnemySpawner::AEnemySpawner() : EnemyClass(AEnemy::StaticClass()),
 																 SpawnCount(1),
 																 SpawnInterval(0.5f),
 																 bAgressive(true),
-																 bInSpawnArea(true)
+																 bInSpawnArea(true),
+																 bActive(false)
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
