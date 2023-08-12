@@ -93,7 +93,10 @@ void AEnemy::BeginPlay()
   GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 
   // Get the AI controller
-  EnemyController = Cast<AEnemyController>(GetController());
+  if (GetController())
+  {
+    EnemyController = Cast<AEnemyController>(GetController());
+  }
 
   const FVector WorldPatrolPoint1 = UKismetMathLibrary::TransformLocation(
       GetActorTransform(),
