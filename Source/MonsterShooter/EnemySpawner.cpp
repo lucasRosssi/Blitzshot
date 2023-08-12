@@ -3,8 +3,10 @@
 #include "EnemySpawner.h"
 #include "Enemy.h"
 #include "Components/SphereComponent.h"
+#include "Components/BoxComponent.h"
 #include "EnemyController.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "ShooterCharacter.h"
 
 // Sets default values
 AEnemySpawner::AEnemySpawner() : EnemyClass(AEnemy::StaticClass()),
@@ -12,13 +14,16 @@ AEnemySpawner::AEnemySpawner() : EnemyClass(AEnemy::StaticClass()),
 																 SpawnInterval(0.5f),
 																 bAgressive(true),
 																 bInSpawnArea(true),
-																 bActive(false)
+																 bActive(true)
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 
 	SpawnAreaSphere = CreateDefaultSubobject<USphereComponent>(TEXT("SpawnAreaSphere"));
-	SpawnAreaSphere->SetupAttachment(GetRootComponent());
+	SetRootComponent(SpawnAreaSphere);
+
+	TriggerBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerBox"));
+	TriggerBox->SetupAttachment(GetRootComponent());
 }
 
 // Called when the game starts or when spawned
@@ -26,7 +31,9 @@ void AEnemySpawner::BeginPlay()
 {
 	Super::BeginPlay();
 
-	SpawnEnemies();
+	TriggerBox->OnComponentBeginOverlap.AddDynamic(
+			this,
+			&AEnemySpawner::OnTriggerBoxOverlap);
 }
 
 void AEnemySpawner::SpawnEnemies()
@@ -59,11 +66,9 @@ void AEnemySpawner::SpawnEnemies()
 		EnemiesSpawned.Add(Enemy);
 
 		auto EnemyController = Cast<AEnemyController>(Enemy->GetController());
-		if (EnemyController && EnemyController->GetBlackboardComponent() && bAgressive)
+		if (EnemyController && EnemyController->GetBlackboardComponent() && bAgressive && Player)
 		{
-			auto Character = GetWorld()->GetFirstPlayerController()->GetPawn();
-
-			EnemyController->GetBlackboardComponent()->SetValueAsObject(TEXT("Target"), Character);
+			EnemyController->GetBlackboardComponent()->SetValueAsObject(TEXT("Target"), Player);
 		}
 	}
 
@@ -71,9 +76,32 @@ void AEnemySpawner::SpawnEnemies()
 	{
 		GetWorldTimerManager().SetTimer(SpawnIntervalTimer,
 																		this,
-																		&AEnemySpawner::SpawnEnemies,
+																		&AEnemySpawner::SpawnTimerReset,
 																		SpawnInterval);
 	}
+}
+
+void AEnemySpawner::SpawnTimerReset()
+{
+	SpawnEnemies();
+}
+
+void AEnemySpawner::OnTriggerBoxOverlap(
+		UPrimitiveComponent *OverlappedComponent,
+		AActor *OtherActor,
+		UPrimitiveComponent *OtherComp,
+		int32 OtherBodyIndex,
+		bool bFromSweep,
+		const FHitResult &SweepResult)
+{
+	if (!OtherActor || !bActive)
+		return;
+	bActive = false;
+	TriggerBox->OnComponentBeginOverlap.RemoveAll(this);
+
+	Player = Cast<AShooterCharacter>(OtherActor);
+
+	SpawnEnemies();
 }
 
 // Called every frame

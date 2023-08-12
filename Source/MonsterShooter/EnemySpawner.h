@@ -22,6 +22,17 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void SpawnEnemies();
 
+	void SpawnTimerReset();
+
+	UFUNCTION()
+	void OnTriggerBoxOverlap(
+			UPrimitiveComponent *OverlappedComponent,
+			AActor *OtherActor,
+			UPrimitiveComponent *OtherComp,
+			int32 OtherBodyIndex,
+			bool bFromSweep,
+			const FHitResult &SweepResult);
+
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -59,4 +70,10 @@ private:
 	/** Spawns enemies when active */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning", meta = (AllowPrivateAccess = "true"))
 	bool bActive;
+
+	/** Box for triggering the spawns */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	class UBoxComponent *TriggerBox;
+
+	class AShooterCharacter *Player;
 };
