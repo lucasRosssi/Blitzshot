@@ -7,6 +7,19 @@
 #include "BulletHitInterface.h"
 #include "Enemy.generated.h"
 
+UENUM(BlueprintType)
+enum class EEnemyState : uint8
+{
+  EES_Unoccupied UMETA(DisplayName = "Unoccupied"),
+  EES_Attacking UMETA(DisplayName = "Attacking"),
+  EES_Rushing UMETA(DisplayName = "Rushing"),
+
+  EES_Staggered UMETA(DisplayName = "Staggered"),
+  EES_Dead UMETA(DisplayName = "Dead"),
+
+  EES_MAX UMETA(DisplayName = "DefaultMAX")
+};
+
 UCLASS()
 class MONSTERSHOOTER_API AEnemy : public ACharacter, public IBulletHitInterface
 {
@@ -75,6 +88,12 @@ protected:
 
   UFUNCTION(BlueprintPure)
   FName GetAttackSectionName();
+
+  UFUNCTION(BlueprintCallable)
+  void RushAttackStart();
+
+  UFUNCTION(BlueprintCallable)
+  void RushAttackEnd();
 
   UFUNCTION()
   void OnWeaponOverlap(
@@ -197,6 +216,7 @@ private:
   FName AttackR;
   FName AttackLFast;
   FName AttackRFast;
+  FName RushAttackSection;
 
   /** Collision volume for the left weapon */
   UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
@@ -231,6 +251,12 @@ private:
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat", meta = (AllowPrivateAccess = "true"))
   class UHealthComponent *HealthComponent;
 
+  /** Whether the enemy is dead or not */
+  UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+  EEnemyState EnemyState;
+
+  float BaseMovementSpeed;
+
 public:
   // Called every frame
   virtual void Tick(float DeltaTime) override;
@@ -243,6 +269,8 @@ public:
   virtual float TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEvent, AController *EventInstigator, AActor *DamageCauser) override;
 
   void TakeBalanceDamage(float Amount);
+
+  void SetEnemyState(EEnemyState State);
 
   UFUNCTION(BlueprintImplementableEvent)
   void ShowHitNumber(int32 Damage, FVector HitLocation, bool bWeakspot);

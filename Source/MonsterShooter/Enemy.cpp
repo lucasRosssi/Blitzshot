@@ -1,6 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Enemy.h"
+#include "GameFramework/CharacterMovementComponent.h"
+
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Sound/SoundCue.h"
@@ -28,10 +30,13 @@ AEnemy::AEnemy() : HealthBarDisplayTime(4.f),
                    AttackR(TEXT("AttackR")),
                    AttackLFast(TEXT("AttackLFast")),
                    AttackRFast(TEXT("AttackRFast")),
+                   RushAttackSection(TEXT("RushAttack")),
                    BasicAttackDamage(20.f),
                    bCanAttack(true),
                    AttackWaitTime(1.f),
-                   bDead(false)
+                   bDead(false),
+                   EnemyState(EEnemyState::EES_Unoccupied),
+                   BaseMovementSpeed(400.0f)
 {
   // Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
   PrimaryActorTick.bCanEverTick = true;
@@ -115,6 +120,8 @@ void AEnemy::BeginPlay()
   }
 
   HealthComponent->Health = HealthComponent->MaxHealth;
+
+  BaseMovementSpeed = GetCharacterMovement()->MaxWalkSpeed;
 }
 
 void AEnemy::ShowHealthBar_Implementation()
@@ -167,7 +174,7 @@ void AEnemy::ResetHitReactTimer()
 
 void AEnemy::Stagger()
 {
-  if (bStaggered)
+  if (bStaggered || EnemyState == EEnemyState::EES_Rushing)
     return;
 
   SetStaggered(true);
@@ -295,7 +302,12 @@ void AEnemy::AttackPlayer(FName MontageSection)
 FName AEnemy::GetAttackSectionName()
 {
   FName SectionName;
-  const int32 Section{FMath::RandRange(1, 4)};
+  const int32 Section{FMath::RandRange(1, 2)};
+
+  if (EnemyState == EEnemyState::EES_Rushing)
+  {
+    return RushAttackSection;
+  }
 
   switch (Section)
   {
@@ -305,14 +317,22 @@ FName AEnemy::GetAttackSectionName()
   case 2:
     SectionName = AttackR;
     break;
-  case 3:
-    SectionName = AttackLFast;
-    break;
-  case 4:
-    SectionName = AttackRFast;
-    break;
   }
   return SectionName;
+}
+
+void AEnemy::RushAttackStart()
+{
+  SetEnemyState(EEnemyState::EES_Rushing);
+
+  GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed * 2.5f;
+}
+
+void AEnemy::RushAttackEnd()
+{
+  SetEnemyState(EEnemyState::EES_Unoccupied);
+
+  GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
 }
 
 void AEnemy::DoDamage(AActor *Target, const FHitResult &SweepResult)
@@ -458,7 +478,7 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEv
 
 void AEnemy::TakeBalanceDamage(float Amount)
 {
-  if (bStaggered)
+  if (bStaggered || EnemyState == EEnemyState::EES_Rushing)
     return;
 
   if (Balance - Amount <= 0.f)
@@ -469,6 +489,16 @@ void AEnemy::TakeBalanceDamage(float Amount)
   else
   {
     Balance -= Amount;
+  }
+}
+
+void AEnemy::SetEnemyState(EEnemyState State)
+{
+  EnemyState = State;
+  uint8 EnumByte = (uint8)State;
+  if (EnemyController && EnemyController->GetBlackboardComponent())
+  {
+    EnemyController->GetBlackboardComponent()->SetValueAsEnum(FName("EnemyState"), EnumByte);
   }
 }
 
