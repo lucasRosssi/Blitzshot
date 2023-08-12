@@ -23,7 +23,6 @@ AEnemySpawner::AEnemySpawner() : EnemyClass(AEnemy::StaticClass()),
 	SetRootComponent(SpawnAreaSphere);
 
 	TriggerBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerBox"));
-	TriggerBox->SetupAttachment(GetRootComponent());
 }
 
 // Called when the game starts or when spawned
@@ -96,10 +95,14 @@ void AEnemySpawner::OnTriggerBoxOverlap(
 {
 	if (!OtherActor || !bActive)
 		return;
-	bActive = false;
-	TriggerBox->OnComponentBeginOverlap.RemoveAll(this);
 
 	Player = Cast<AShooterCharacter>(OtherActor);
+
+	if (!Player)
+		return;
+
+	bActive = false;
+	TriggerBox->OnComponentBeginOverlap.RemoveAll(this);
 
 	SpawnEnemies();
 }
