@@ -174,7 +174,7 @@ void AEnemy::ResetHitReactTimer()
 
 void AEnemy::Stagger()
 {
-  if (bStaggered || EnemyState == EEnemyState::EES_Rushing)
+  if (bStaggered || EnemyState == EEnemyState::EES_Rushing || EnemyState == EEnemyState::EES_Roaring)
     return;
 
   SetStaggered(true);
@@ -335,6 +335,27 @@ void AEnemy::RushAttackEnd()
   GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
 }
 
+void AEnemy::RageRoar(float Chance)
+{
+  if (EnemyState != EEnemyState::EES_Unoccupied)
+  {
+    return;
+  }
+
+  float Random = FMath::RandRange(0.f, 1.f);
+
+  if (Random <= Chance)
+  {
+    SetEnemyState(EEnemyState::EES_Roaring);
+    PlayMontage(RoarMontage, FName("Roar"));
+  }
+}
+
+void AEnemy::Taunt()
+{
+  PlayMontage(TauntMontage, FName("BackScratch"), 1.15f);
+}
+
 void AEnemy::DoDamage(AActor *Target, const FHitResult &SweepResult)
 {
   if (!Target)
@@ -349,6 +370,12 @@ void AEnemy::DoDamage(AActor *Target, const FHitResult &SweepResult)
                                 EnemyController,
                                 this,
                                 UDamageType::StaticClass());
+
+  if (Character->IsDead())
+  {
+    Taunt();
+    SetEnemyState(EEnemyState::EES_Taunting);
+  }
 
   if (Character->GetMeleeImpactSound())
   {
@@ -463,14 +490,16 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEv
   {
     ShowHealthBar();
 
-    if (!bStaggered)
+    if (!bStaggered && bCanAttack && EnemyState == EEnemyState::EES_Unoccupied)
     {
-      float Chance = FMath::RandRange(0.f, 1.f);
-      if (Chance < 0.25f)
+      float HitReactChance = FMath::RandRange(0.f, 1.f);
+      if (HitReactChance < 0.33f)
       {
         PlayMontage(HitMontage, FName("HitFront"));
       }
     }
+
+    RageRoar(0.02f);
   }
 
   return DamageAmount;
@@ -478,7 +507,7 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEv
 
 void AEnemy::TakeBalanceDamage(float Amount)
 {
-  if (bStaggered || EnemyState == EEnemyState::EES_Rushing)
+  if (bStaggered || EnemyState == EEnemyState::EES_Rushing || EnemyState == EEnemyState::EES_Roaring)
     return;
 
   if (Balance - Amount <= 0.f)

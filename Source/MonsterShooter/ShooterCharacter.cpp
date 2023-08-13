@@ -148,7 +148,7 @@ float AShooterCharacter::TakeDamage(
     Die();
 
     auto EnemyController = Cast<AEnemyController>(EventInstigator);
-    if (EnemyController)
+    if (EnemyController && EnemyController->GetBlackboardComponent())
     {
       EnemyController->GetBlackboardComponent()->SetValueAsBool(
           FName(TEXT("CharacterIsDead")),

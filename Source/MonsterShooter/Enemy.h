@@ -13,6 +13,8 @@ enum class EEnemyState : uint8
   EES_Unoccupied UMETA(DisplayName = "Unoccupied"),
   EES_Attacking UMETA(DisplayName = "Attacking"),
   EES_Rushing UMETA(DisplayName = "Rushing"),
+  EES_Roaring UMETA(DisplayName = "Roaring"),
+  EES_Taunting UMETA(DisplayName = "Taunting"),
 
   EES_Staggered UMETA(DisplayName = "Staggered"),
   EES_Dead UMETA(DisplayName = "Dead"),
@@ -94,6 +96,12 @@ protected:
 
   UFUNCTION(BlueprintCallable)
   void RushAttackEnd();
+
+  UFUNCTION(BlueprintCallable)
+  void RageRoar(float Chance = 1.f);
+
+  UFUNCTION(BlueprintCallable)
+  void Taunt();
 
   UFUNCTION()
   void OnWeaponOverlap(
@@ -257,6 +265,14 @@ private:
 
   float BaseMovementSpeed;
 
+  /** Montage with rage roar animation */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+  UAnimMontage *RoarMontage;
+
+  /** Montage with taunt animation */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+  UAnimMontage *TauntMontage;
+
 public:
   // Called every frame
   virtual void Tick(float DeltaTime) override;
@@ -270,6 +286,7 @@ public:
 
   void TakeBalanceDamage(float Amount);
 
+  UFUNCTION(BlueprintCallable)
   void SetEnemyState(EEnemyState State);
 
   UFUNCTION(BlueprintImplementableEvent)
