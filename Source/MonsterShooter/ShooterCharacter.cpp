@@ -1749,7 +1749,7 @@ void AShooterCharacter::StartDodgeTimer()
       DodgeTimer,
       this,
       &AShooterCharacter::ResetDodgeTimer,
-      1.5f);
+      0.75f);
 }
 
 void AShooterCharacter::ResetDodgeTimer()

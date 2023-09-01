@@ -12,6 +12,7 @@ enum class EEnemyState : uint8
 {
   EES_Unoccupied UMETA(DisplayName = "Unoccupied"),
   EES_Attacking UMETA(DisplayName = "Attacking"),
+  EES_Dodging UMETA(DisplayName = "Dodging"),
   EES_Rushing UMETA(DisplayName = "Rushing"),
   EES_Roaring UMETA(DisplayName = "Roaring"),
   EES_Taunting UMETA(DisplayName = "Taunting"),
@@ -102,6 +103,9 @@ protected:
 
   UFUNCTION(BlueprintCallable)
   void Taunt();
+
+  UFUNCTION(BlueprintCallable)
+  void Dodge(float Chance = 0.1f);
 
   UFUNCTION()
   void OnWeaponOverlap(
@@ -272,6 +276,10 @@ private:
   /** Montage with taunt animation */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
   UAnimMontage *TauntMontage;
+
+  /** Montage with taunt animation */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+  UAnimMontage *DodgeMontage;
 
 public:
   // Called every frame

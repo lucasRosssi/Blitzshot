@@ -356,6 +356,34 @@ void AEnemy::Taunt()
   PlayMontage(TauntMontage, FName("BackScratch"), 1.15f);
 }
 
+void AEnemy::Dodge(float Chance)
+{
+  if (EnemyState != EEnemyState::EES_Unoccupied || bStaggered)
+    return;
+
+  const float ChanceRoll = FMath::RandRange(0.f, 1.f);
+
+  if (ChanceRoll <= Chance)
+  {
+    SetEnemyState(EEnemyState::EES_Dodging);
+
+    FName DodgeDirection;
+
+    const int32 RandomRoll = FMath::RandRange(0, 1);
+    switch (RandomRoll)
+    {
+    case 0:
+      DodgeDirection = FName("DodgeL");
+      break;
+    case 1:
+      DodgeDirection = FName("DodgeR");
+      break;
+    }
+
+    PlayMontage(DodgeMontage, DodgeDirection, 1.25f);
+  }
+}
+
 void AEnemy::DoDamage(AActor *Target, const FHitResult &SweepResult)
 {
   if (!Target)
@@ -499,6 +527,7 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEv
       }
     }
 
+    Dodge(0.04f);
     RageRoar(0.02f);
   }
 
