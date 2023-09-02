@@ -67,9 +67,6 @@ protected:
       bool bFromSweep,
       const FHitResult &SweepResult);
 
-  UFUNCTION(BlueprintCallable)
-  void SetStaggered(bool Staggered);
-
   UFUNCTION()
   void CombatRangeOverlap(
       UPrimitiveComponent *OverlappedComponent,
@@ -133,6 +130,8 @@ protected:
   UFUNCTION(BlueprintCallable)
   void FinishDeath();
 
+  bool TriggerChance(float Chance);
+
 private:
   /** Particles to spawn when hit by bullets */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
@@ -194,10 +193,6 @@ private:
   /** Overlap sphere for when the enemy becomes hostile */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
   class USphereComponent *AgroSphere;
-
-  /** Whether the enemy is staggered */
-  UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
-  bool bStaggered;
 
   /** Current balance value. When it reaches zero, the enemy gets staggered */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))

@@ -22,7 +22,6 @@ AEnemy::AEnemy() : HealthBarDisplayTime(4.f),
                    HitReactTimeMin(0.1f),
                    HitReactTimeMax(0.5f),
                    HitNumberDestroyTime(1.5f),
-                   bStaggered(false),
                    Balance(100.f),
                    MaxBalance(100.f),
                    BalanceRecoveryRate(25.f),
@@ -174,11 +173,13 @@ void AEnemy::ResetHitReactTimer()
 
 void AEnemy::Stagger()
 {
-  if (bStaggered || EnemyState == EEnemyState::EES_Rushing || EnemyState == EEnemyState::EES_Roaring)
+  const bool bCanStagger = !(EnemyState == EEnemyState::EES_Staggered || EnemyState == EEnemyState::EES_Dead || EnemyState == EEnemyState::EES_Roaring || EnemyState == EEnemyState::EES_Rushing);
+
+  if (!bCanStagger)
     return;
 
-  SetStaggered(true);
-  PlayMontage(StaggerMontage, FName("HitReactFront"), 0.75f);
+  SetEnemyState(EEnemyState::EES_Staggered);
+  PlayMontage(StaggerMontage, FName("HitReactFront"), 0.8f);
 }
 
 void AEnemy::StoreHitNumber(UUserWidget *HitNumber, FVector Location)
@@ -220,17 +221,6 @@ void AEnemy::AgroSphereOverlap(
     {
       EnemyController->GetBlackboardComponent()->SetValueAsObject(TEXT("Target"), Character);
     }
-  }
-}
-
-void AEnemy::SetStaggered(bool Staggered)
-{
-  bStaggered = Staggered;
-  if (EnemyController && EnemyController->GetBlackboardComponent())
-  {
-    EnemyController->GetBlackboardComponent()->SetValueAsBool(
-        TEXT("Staggered"),
-        Staggered);
   }
 }
 
@@ -342,9 +332,7 @@ void AEnemy::RageRoar(float Chance)
     return;
   }
 
-  float Random = FMath::RandRange(0.f, 1.f);
-
-  if (Random <= Chance)
+  if (TriggerChance(Chance))
   {
     SetEnemyState(EEnemyState::EES_Roaring);
     PlayMontage(RoarMontage, FName("Roar"));
@@ -358,12 +346,12 @@ void AEnemy::Taunt()
 
 void AEnemy::Dodge(float Chance)
 {
-  if (EnemyState != EEnemyState::EES_Unoccupied || bStaggered)
+  const bool bCanDodge = EnemyState == EEnemyState::EES_Unoccupied;
+
+  if (!bCanDodge)
     return;
 
-  const float ChanceRoll = FMath::RandRange(0.f, 1.f);
-
-  if (ChanceRoll <= Chance)
+  if (TriggerChance(Chance))
   {
     SetEnemyState(EEnemyState::EES_Dodging);
 
@@ -380,7 +368,7 @@ void AEnemy::Dodge(float Chance)
       break;
     }
 
-    PlayMontage(DodgeMontage, DodgeDirection, 1.25f);
+    PlayMontage(DodgeMontage, DodgeDirection, 1.5f);
   }
 }
 
@@ -474,6 +462,18 @@ void AEnemy::FinishDeath()
   SetLifeSpan(10.f);
 }
 
+bool AEnemy::TriggerChance(float Chance)
+{
+  float Trigger = FMath::RandRange(0.f, 1.f);
+
+  if (Trigger <= Chance)
+  {
+    return true;
+  }
+
+  return false;
+}
+
 // Called every frame
 void AEnemy::Tick(float DeltaTime)
 {
@@ -518,17 +518,16 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEv
   {
     ShowHealthBar();
 
-    if (!bStaggered && bCanAttack && EnemyState == EEnemyState::EES_Unoccupied)
+    if (bCanAttack && EnemyState == EEnemyState::EES_Unoccupied)
     {
-      float HitReactChance = FMath::RandRange(0.f, 1.f);
-      if (HitReactChance < 0.33f)
+      if (TriggerChance(0.33f))
       {
         PlayMontage(HitMontage, FName("HitFront"));
       }
     }
 
-    Dodge(0.04f);
-    RageRoar(0.02f);
+    Dodge(0.06f);
+    RageRoar(0.015f);
   }
 
   return DamageAmount;
@@ -536,7 +535,9 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEv
 
 void AEnemy::TakeBalanceDamage(float Amount)
 {
-  if (bStaggered || EnemyState == EEnemyState::EES_Rushing || EnemyState == EEnemyState::EES_Roaring)
+  const bool bCanTakeBalanceDamage = !(EnemyState == EEnemyState::EES_Staggered || EnemyState == EEnemyState::EES_Rushing || EnemyState == EEnemyState::EES_Roaring);
+
+  if (!bCanTakeBalanceDamage)
     return;
 
   if (Balance - Amount <= 0.f)
