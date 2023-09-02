@@ -79,3 +79,15 @@ void UHealthComponent::TakeDamage(float Damage)
 				HealthRegenCooldown);
 	}
 }
+
+void UHealthComponent::Heal(float Amount)
+{
+	if (Health + Amount >= MaxHealth)
+	{
+		Health = MaxHealth;
+	}
+	else
+	{
+		Health += Amount;
+	}
+}

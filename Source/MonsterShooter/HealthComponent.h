@@ -29,6 +29,8 @@ public:
 
 	void TakeDamage(float Damage);
 
+	void Heal(float Amount);
+
 public:
 	/** Maximum health of the actor */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))

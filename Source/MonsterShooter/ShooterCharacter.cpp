@@ -24,6 +24,7 @@
 #include "EnemyController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "HealthComponent.h"
+#include "Components/CapsuleComponent.h"
 
 // Sets default values
 AShooterCharacter::AShooterCharacter() : bAiming(false),
@@ -72,7 +73,9 @@ AShooterCharacter::AShooterCharacter() : bAiming(false),
                                          RecoilAmount(0.8f),
                                          DodgeMontageSection(TEXT("DodgeBackward")),
                                          bCanDodge(true),
-                                         bInvulnerable(false),
+                                         DodgeCost(30.f),
+                                         DodgeHeal(25.f),
+                                         bDodgeInvulnerable(false),
                                          MaxStamina(100.f),
                                          Stamina(MaxStamina),
                                          StaminaRegen(20.f),
@@ -97,12 +100,17 @@ AShooterCharacter::AShooterCharacter() : bAiming(false),
 
   HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
   HealthComponent->MaxHealth = 100.f;
-  HealthComponent->HealthRegen = 10.0f,
-  HealthComponent->HealthRegenCooldown = 5.0f,
-  HealthComponent->bHealthRegenActive = true,
+  HealthComponent->HealthRegen = 1.0f,
+  HealthComponent->HealthRegenCooldown = 30.0f,
+  HealthComponent->bHealthRegenActive = false,
+
+  DodgeCapsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("DodgeCapsule"));
+  DodgeCapsule->SetupAttachment(RootComponent);
+  DodgeCapsule->SetCapsuleHalfHeight(GetCapsuleComponent()->GetScaledCapsuleHalfHeight());
+  DodgeCapsule->SetCapsuleRadius(GetCapsuleComponent()->GetScaledCapsuleRadius());
 
   // Don't rotate when the controller rotates. Let the controller only affect the camera
-      bUseControllerRotationPitch = false;
+  bUseControllerRotationPitch = false;
   bUseControllerRotationYaw = true;
   bUseControllerRotationRoll = false;
 
@@ -385,7 +393,7 @@ void AShooterCharacter::Dodge(const FInputActionValue &Value)
 {
   const bool bDodgeableState = CombatState != ECombatState::ECS_Dodging && CombatState != ECombatState::ECS_Staggered;
 
-  if (GetCharacterMovement()->IsFalling() || !bDodgeableState || !bCanDodge || Stamina <= 30.f)
+  if (GetCharacterMovement()->IsFalling() || !bDodgeableState || !bCanDodge || Stamina <= DodgeCost)
     return;
 
   if (CombatState == ECombatState::ECS_Reloading)
@@ -397,10 +405,11 @@ void AShooterCharacter::Dodge(const FInputActionValue &Value)
 
   int32 Direction = GetMovementInputDirection(MovementInputX, MovementInputY);
 
+  bUseControllerRotationYaw = false;
   PlayDodgeAnimation(Direction);
   StartDodgeTimer();
-  ConsumeStamina(30.f);
-  bInvulnerable = true;
+  ConsumeStamina(DodgeCost);
+  bDodgeInvulnerable = true;
   bCanDodge = false;
 }
 
@@ -473,8 +482,11 @@ void AShooterCharacter::NextWeapon(const FInputActionValue &Value)
 
 void AShooterCharacter::EndSprint()
 {
-  CombatState = ECombatState::ECS_Unoccupied;
-  GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
+  if (CombatState == ECombatState::ECS_Sprinting)
+  {
+    CombatState = ECombatState::ECS_Unoccupied;
+    GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
+  }
 }
 
 void AShooterCharacter::FireWeapon()
@@ -1278,9 +1290,17 @@ void AShooterCharacter::TriggerRecoil()
 
 void AShooterCharacter::FinishDodge()
 {
+  bUseControllerRotationYaw = true;
+
   if (CombatState == ECombatState::ECS_Dodging)
   {
     CombatState = ECombatState::ECS_Unoccupied;
+  }
+
+  UAnimInstance *AnimInstance = GetMesh()->GetAnimInstance();
+  if (AnimInstance)
+  {
+    AnimInstance->Montage_Stop(0.25f, DodgeMontage);
   }
 }
 
@@ -1762,7 +1782,16 @@ void AShooterCharacter::Stagger()
   if (bDead)
     return;
 
+  bUseControllerRotationYaw = true;
   CombatState = ECombatState::ECS_Staggered;
 
   PlayAnimationMontage(HitReactMontage, FName("HitReactRight"), 1.25f);
+}
+
+void AShooterCharacter::Heal(float Amount)
+{
+  if (bDead || CombatState == ECombatState::ECS_Dead)
+    return;
+
+  HealthComponent->Heal(Amount);
 }

@@ -378,8 +378,14 @@ void AEnemy::DoDamage(AActor *Target, const FHitResult &SweepResult)
     return;
 
   auto Character = Cast<AShooterCharacter>(Target);
-  if (!Character || Character->IsInvulnerable())
+  if (!Character)
     return;
+
+  if (Character->IsDodgeInvulnerable())
+  {
+    Character->Heal(Character->GetDodgeHeal());
+    return;
+  }
 
   UGameplayStatics::ApplyDamage(Character,
                                 BasicAttackDamage,
