@@ -1,6 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Enemy.h"
+#include "GameFramework/CharacterMovementComponent.h"
+
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Sound/SoundCue.h"
@@ -20,7 +22,6 @@ AEnemy::AEnemy() : HealthBarDisplayTime(4.f),
                    HitReactTimeMin(0.1f),
                    HitReactTimeMax(0.5f),
                    HitNumberDestroyTime(1.5f),
-                   bStaggered(false),
                    Balance(100.f),
                    MaxBalance(100.f),
                    BalanceRecoveryRate(25.f),
@@ -28,10 +29,13 @@ AEnemy::AEnemy() : HealthBarDisplayTime(4.f),
                    AttackR(TEXT("AttackR")),
                    AttackLFast(TEXT("AttackLFast")),
                    AttackRFast(TEXT("AttackRFast")),
+                   RushAttackSection(TEXT("RushAttack")),
                    BasicAttackDamage(20.f),
                    bCanAttack(true),
                    AttackWaitTime(1.f),
-                   bDead(false)
+                   bDead(false),
+                   EnemyState(EEnemyState::EES_Unoccupied),
+                   BaseMovementSpeed(400.0f)
 {
   // Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
   PrimaryActorTick.bCanEverTick = true;
@@ -115,6 +119,8 @@ void AEnemy::BeginPlay()
   }
 
   HealthComponent->Health = HealthComponent->MaxHealth;
+
+  BaseMovementSpeed = GetCharacterMovement()->MaxWalkSpeed;
 }
 
 void AEnemy::ShowHealthBar_Implementation()
@@ -167,11 +173,13 @@ void AEnemy::ResetHitReactTimer()
 
 void AEnemy::Stagger()
 {
-  if (bStaggered)
+  const bool bCanStagger = !(EnemyState == EEnemyState::EES_Staggered || EnemyState == EEnemyState::EES_Dead || EnemyState == EEnemyState::EES_Roaring || EnemyState == EEnemyState::EES_Rushing);
+
+  if (!bCanStagger)
     return;
 
-  SetStaggered(true);
-  PlayMontage(StaggerMontage, FName("HitReactFront"), 0.75f);
+  SetEnemyState(EEnemyState::EES_Staggered);
+  PlayMontage(StaggerMontage, FName("HitReactFront"), 0.8f);
 }
 
 void AEnemy::StoreHitNumber(UUserWidget *HitNumber, FVector Location)
@@ -213,17 +221,6 @@ void AEnemy::AgroSphereOverlap(
     {
       EnemyController->GetBlackboardComponent()->SetValueAsObject(TEXT("Target"), Character);
     }
-  }
-}
-
-void AEnemy::SetStaggered(bool Staggered)
-{
-  bStaggered = Staggered;
-  if (EnemyController && EnemyController->GetBlackboardComponent())
-  {
-    EnemyController->GetBlackboardComponent()->SetValueAsBool(
-        TEXT("Staggered"),
-        Staggered);
   }
 }
 
@@ -295,7 +292,12 @@ void AEnemy::AttackPlayer(FName MontageSection)
 FName AEnemy::GetAttackSectionName()
 {
   FName SectionName;
-  const int32 Section{FMath::RandRange(1, 4)};
+  const int32 Section{FMath::RandRange(1, 2)};
+
+  if (EnemyState == EEnemyState::EES_Rushing)
+  {
+    return RushAttackSection;
+  }
 
   switch (Section)
   {
@@ -305,14 +307,69 @@ FName AEnemy::GetAttackSectionName()
   case 2:
     SectionName = AttackR;
     break;
-  case 3:
-    SectionName = AttackLFast;
-    break;
-  case 4:
-    SectionName = AttackRFast;
-    break;
   }
   return SectionName;
+}
+
+void AEnemy::RushAttackStart()
+{
+  SetEnemyState(EEnemyState::EES_Rushing);
+
+  GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed * 2.5f;
+}
+
+void AEnemy::RushAttackEnd()
+{
+  SetEnemyState(EEnemyState::EES_Unoccupied);
+
+  GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
+}
+
+void AEnemy::RageRoar(float Chance)
+{
+  if (EnemyState != EEnemyState::EES_Unoccupied)
+  {
+    return;
+  }
+
+  if (TriggerChance(Chance))
+  {
+    SetEnemyState(EEnemyState::EES_Roaring);
+    PlayMontage(RoarMontage, FName("Roar"));
+  }
+}
+
+void AEnemy::Taunt()
+{
+  PlayMontage(TauntMontage, FName("BackScratch"), 1.15f);
+}
+
+void AEnemy::Dodge(float Chance)
+{
+  const bool bCanDodge = EnemyState == EEnemyState::EES_Unoccupied;
+
+  if (!bCanDodge)
+    return;
+
+  if (TriggerChance(Chance))
+  {
+    SetEnemyState(EEnemyState::EES_Dodging);
+
+    FName DodgeDirection;
+
+    const int32 RandomRoll = FMath::RandRange(0, 1);
+    switch (RandomRoll)
+    {
+    case 0:
+      DodgeDirection = FName("DodgeL");
+      break;
+    case 1:
+      DodgeDirection = FName("DodgeR");
+      break;
+    }
+
+    PlayMontage(DodgeMontage, DodgeDirection, 1.5f);
+  }
 }
 
 void AEnemy::DoDamage(AActor *Target, const FHitResult &SweepResult)
@@ -329,6 +386,12 @@ void AEnemy::DoDamage(AActor *Target, const FHitResult &SweepResult)
                                 EnemyController,
                                 this,
                                 UDamageType::StaticClass());
+
+  if (Character->IsDead())
+  {
+    Taunt();
+    SetEnemyState(EEnemyState::EES_Taunting);
+  }
 
   if (Character->GetMeleeImpactSound())
   {
@@ -399,6 +462,18 @@ void AEnemy::FinishDeath()
   SetLifeSpan(10.f);
 }
 
+bool AEnemy::TriggerChance(float Chance)
+{
+  float Trigger = FMath::RandRange(0.f, 1.f);
+
+  if (Trigger <= Chance)
+  {
+    return true;
+  }
+
+  return false;
+}
+
 // Called every frame
 void AEnemy::Tick(float DeltaTime)
 {
@@ -443,14 +518,16 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEv
   {
     ShowHealthBar();
 
-    if (!bStaggered)
+    if (bCanAttack && EnemyState == EEnemyState::EES_Unoccupied)
     {
-      float Chance = FMath::RandRange(0.f, 1.f);
-      if (Chance < 0.25f)
+      if (TriggerChance(0.33f))
       {
         PlayMontage(HitMontage, FName("HitFront"));
       }
     }
+
+    Dodge(0.06f);
+    RageRoar(0.015f);
   }
 
   return DamageAmount;
@@ -458,7 +535,9 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEv
 
 void AEnemy::TakeBalanceDamage(float Amount)
 {
-  if (bStaggered)
+  const bool bCanTakeBalanceDamage = !(EnemyState == EEnemyState::EES_Staggered || EnemyState == EEnemyState::EES_Rushing || EnemyState == EEnemyState::EES_Roaring);
+
+  if (!bCanTakeBalanceDamage)
     return;
 
   if (Balance - Amount <= 0.f)
@@ -469,6 +548,16 @@ void AEnemy::TakeBalanceDamage(float Amount)
   else
   {
     Balance -= Amount;
+  }
+}
+
+void AEnemy::SetEnemyState(EEnemyState State)
+{
+  EnemyState = State;
+  uint8 EnumByte = (uint8)State;
+  if (EnemyController && EnemyController->GetBlackboardComponent())
+  {
+    EnemyController->GetBlackboardComponent()->SetValueAsEnum(FName("EnemyState"), EnumByte);
   }
 }
 
