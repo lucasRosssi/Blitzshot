@@ -99,9 +99,9 @@ AShooterCharacter::AShooterCharacter() : bAiming(false),
 
   HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
   HealthComponent->MaxHealth = 100.f;
-  HealthComponent->HealthRegen = 1.0f,
-  HealthComponent->HealthRegenCooldown = 30.0f,
-  HealthComponent->bHealthRegenActive = false,
+  HealthComponent->HealthRegen = 0.5f,
+  HealthComponent->HealthRegenCooldown = 20.0f,
+  HealthComponent->bHealthRegenActive = true,
 
   // Don't rotate when the controller rotates. Let the controller only affect the camera
       bUseControllerRotationPitch = false;
