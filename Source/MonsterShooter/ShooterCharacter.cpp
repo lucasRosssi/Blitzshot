@@ -288,14 +288,7 @@ void AShooterCharacter::Look(const FInputActionValue &Value)
   const FVector2D LookAxisVector = Value.Get<FVector2D>();
 
   AddControllerPitchInput(LookAxisVector.Y * BaseLookRate);
-  if (CombatState == ECombatState::ECS_Sprinting)
-  {
-    AddControllerYawInput(FMath::Clamp(LookAxisVector.X, -0.7f, 0.7f) * BaseLookRate);
-  }
-  else
-  {
-    AddControllerYawInput(LookAxisVector.X * BaseLookRate);
-  }
+  AddControllerYawInput(LookAxisVector.X * BaseLookRate);
 }
 
 void AShooterCharacter::Jump(const FInputActionValue &Value)
