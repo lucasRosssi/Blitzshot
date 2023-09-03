@@ -13,6 +13,7 @@ enum class EOffsetState : uint8
   EOS_Hip UMETA(DisplayName = "Hip"),
   EOS_Reloading UMETA(DisplayName = "Reloading"),
   EOS_InAir UMETA(DisplayName = "InAir"),
+  EOS_Dodging UMETA(DisplayName = "Dodging"),
 
   EOS_MAX UMETA(DisplayName = "DefaultMAX")
 };
@@ -104,10 +105,6 @@ private:
   /** Yaw delta used for leaning */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Lean, meta = (AllowPrivateAccess = "true"))
   float YawDelta;
-
-  /** True when crouching */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Crouching, meta = (AllowPrivateAccess = "true"))
-  bool bCrouching;
 
   /** Whether or not we should use FABRIK in the animation */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))

@@ -512,6 +512,12 @@ private:
   UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
   bool bCanDodge;
 
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  float DodgeCost;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  float DodgeHeal;
+
   /** Timer that handles the character being able to dodge again */
   FTimerHandle DodgeTimer;
   void StartDodgeTimer();
@@ -535,9 +541,9 @@ private:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character, meta = (AllowPrivateAccess = "true"))
   ECharacterName CharacterName;
 
-  /** Whether the character can be hit or not */
+  /** True when the character is in dodge invulnearbility. Some attacks are avoided in this state, even when they connect. */
   UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
-  bool bInvulnerable;
+  bool bDodgeInvulnerable;
 
   /** Character maximum stamina */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
@@ -608,8 +614,12 @@ public:
   FORCEINLINE USoundCue *GetMeleeImpactSound() const { return MeleeImpactSound; }
   FORCEINLINE UParticleSystem *GetBloodParticles() const { return BloodParticles; }
 
-  FORCEINLINE bool IsInvulnerable() const { return bInvulnerable; }
+  FORCEINLINE bool IsDodgeInvulnerable() const { return bDodgeInvulnerable; }
   FORCEINLINE bool IsDead() const { return bDead; }
 
+  FORCEINLINE float GetDodgeHeal() const { return DodgeHeal; }
+
   void Stagger();
+
+  void Heal(float Amount);
 };

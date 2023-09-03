@@ -22,7 +22,6 @@ UShooterAnimInstance::UShooterAnimInstance() : Speed(0.f),
                                                CharacterRotation(FRotator(0.f)),
                                                CharacterRotationLastFrame(FRotator(0.f)),
                                                YawDelta(0.f),
-                                               bCrouching(false),
                                                bShouldUseFABRIK(false)
 {
 }
@@ -41,7 +40,6 @@ void UShooterAnimInstance::UpdateAnimationProperties(float DeltaTime)
 
   ECombatState CState = ShooterCharacter->GetCombatState();
 
-  bCrouching = ShooterCharacter->GetCrouching();
   bReloading = CState == ECombatState::ECS_Reloading;
   bShouldUseFABRIK = CState == ECombatState::ECS_Unoccupied || CState == ECombatState::ECS_FireTimerInProgress;
 
@@ -54,14 +52,7 @@ void UShooterAnimInstance::UpdateAnimationProperties(float DeltaTime)
   bIsInAir = ShooterCharacter->GetCharacterMovement()->IsFalling();
 
   // Is the character accelerating
-  if (ShooterCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0)
-  {
-    bIsAccelerating = true;
-  }
-  else
-  {
-    bIsAccelerating = false;
-  }
+  bIsAccelerating = ShooterCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0;
 
   FRotator AimRotation = ShooterCharacter->GetBaseAimRotation();
   FRotator MovementRotation = UKismetMathLibrary::MakeRotFromX(ShooterCharacter->GetVelocity());
@@ -85,6 +76,10 @@ void UShooterAnimInstance::UpdateAnimationProperties(float DeltaTime)
   else if (ShooterCharacter->GetAiming())
   {
     OffsetState = EOffsetState::EOS_Aiming;
+  }
+  else if (CState == ECombatState::ECS_Dodging)
+  {
+    OffsetState = EOffsetState::EOS_Dodging;
   }
   else
   {
