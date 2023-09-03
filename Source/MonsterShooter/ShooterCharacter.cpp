@@ -24,7 +24,6 @@
 #include "EnemyController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "HealthComponent.h"
-#include "Components/CapsuleComponent.h"
 
 // Sets default values
 AShooterCharacter::AShooterCharacter() : bAiming(false),
@@ -104,13 +103,8 @@ AShooterCharacter::AShooterCharacter() : bAiming(false),
   HealthComponent->HealthRegenCooldown = 30.0f,
   HealthComponent->bHealthRegenActive = false,
 
-  DodgeCapsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("DodgeCapsule"));
-  DodgeCapsule->SetupAttachment(RootComponent);
-  DodgeCapsule->SetCapsuleHalfHeight(GetCapsuleComponent()->GetScaledCapsuleHalfHeight());
-  DodgeCapsule->SetCapsuleRadius(GetCapsuleComponent()->GetScaledCapsuleRadius());
-
   // Don't rotate when the controller rotates. Let the controller only affect the camera
-  bUseControllerRotationPitch = false;
+      bUseControllerRotationPitch = false;
   bUseControllerRotationYaw = true;
   bUseControllerRotationRoll = false;
 

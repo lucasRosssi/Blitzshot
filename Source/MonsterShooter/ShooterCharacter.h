@@ -575,10 +575,6 @@ private:
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI", meta = (AllowPrivateAccess = "true"))
   UTexture2D *CharacterIcon;
 
-  // Capsule to check if an attack was dodged
-  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
-  class UCapsuleComponent *DodgeCapsule;
-
 public:
   // Returns CameraBoom subobject
   FORCEINLINE USpringArmComponent *GetCameraBoom() const { return CameraBoom; }
