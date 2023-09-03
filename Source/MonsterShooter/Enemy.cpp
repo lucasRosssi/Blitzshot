@@ -35,7 +35,8 @@ AEnemy::AEnemy() : HealthBarDisplayTime(4.f),
                    AttackWaitTime(1.f),
                    bDead(false),
                    EnemyState(EEnemyState::EES_Unoccupied),
-                   BaseMovementSpeed(400.0f)
+                   BaseMovementSpeed(400.0f),
+                   EnemyType(EEnemyType::EET_Grux)
 {
   // Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
   PrimaryActorTick.bCanEverTick = true;
@@ -532,8 +533,11 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEv
       }
     }
 
-    Dodge(0.06f);
-    RageRoar(0.015f);
+    if (EnemyType == EEnemyType::EET_Qilin)
+    {
+      Dodge(0.055f);
+      RageRoar(0.02f);
+    }
   }
 
   return DamageAmount;

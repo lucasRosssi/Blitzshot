@@ -23,6 +23,17 @@ enum class EEnemyState : uint8
   EES_MAX UMETA(DisplayName = "DefaultMAX")
 };
 
+UENUM(BlueprintType)
+enum class EEnemyType : uint8
+{
+  EET_Grux UMETA(DisplayName = "Grux"),
+  EET_Warchief UMETA(DisplayName = "Warchief"),
+  EET_Gruxling UMETA(DisplayName = "Gruxling"),
+  EET_Qilin UMETA(DisplayName = "Qilin"),
+
+  EET_MAX UMETA(DisplayName = "DefaultMAX")
+};
+
 UCLASS()
 class MONSTERSHOOTER_API AEnemy : public ACharacter, public IBulletHitInterface
 {
@@ -275,6 +286,10 @@ private:
   /** Montage with taunt animation */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
   UAnimMontage *DodgeMontage;
+
+  /** Montage with taunt animation */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Type", meta = (AllowPrivateAccess = "true"))
+  EEnemyType EnemyType;
 
 public:
   // Called every frame

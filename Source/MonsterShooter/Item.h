@@ -258,6 +258,7 @@ private:
   UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DataTable", meta = (AllowPrivateAccess = "true"))
   class UDataTable *ItemRarityDataTable;
 
+protected:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rarity", meta = (AllowPrivateAccess = "true"))
   FItemRarityTable RarityProperties;
 

@@ -108,6 +108,9 @@ void AWeapon::OnConstruction(const FTransform &Transform)
       SetDynamicMaterialInstance(UMaterialInstanceDynamic::Create(GetMaterialInstance(), this));
       GetItemMesh()->SetMaterial(GetMaterialIndex(), GetDynamicMaterialInstance());
     }
+
+    Damage *= (((RarityProperties.NumberOfStars - 1) * 0.15f) + 1.f);
+    WeakspotDamage *= (((RarityProperties.NumberOfStars - 1) * 0.15f) + 1.f);
   }
 }
 
