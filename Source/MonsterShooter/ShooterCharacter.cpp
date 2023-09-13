@@ -293,7 +293,7 @@ void AShooterCharacter::Look(const FInputActionValue &Value)
 
 void AShooterCharacter::Jump(const FInputActionValue &Value)
 {
-  // Super::Jump();
+  Super::Jump();
   bAiming = false;
 }
 
@@ -488,7 +488,7 @@ void AShooterCharacter::FireWeapon()
   }
 
   PlayFireSound();
-  SendBullet();
+  EquippedWeapon->SendProjectile();
   PlayGunFireMontage();
   TriggerRecoil();
   StartCrosshairBulletFire();
@@ -933,6 +933,7 @@ void AShooterCharacter::EquipWeapon(AWeapon *WeaponToEquip)
   // Set EquippedWeapon to the newly spawned Weapon
   EquippedWeapon = WeaponToEquip;
   EquippedWeapon->SetItemState(EItemState::EIS_Equipped);
+  EquippedWeapon->SetOwner(this);
 }
 
 void AShooterCharacter::DropWeapon()

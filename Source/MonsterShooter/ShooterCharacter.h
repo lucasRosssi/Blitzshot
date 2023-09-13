@@ -181,8 +181,6 @@ protected:
 
   void FinishCrosshairBulletFire();
 
-  bool GetBeamEndLocation(const FVector &MuzzleSocketLocation, FHitResult &OutHitResult);
-
   void StartFireTimer();
 
   UFUNCTION()
@@ -283,6 +281,8 @@ public:
 
   // Called to bind functionality to input
   virtual void SetupPlayerInputComponent(class UInputComponent *PlayerInputComponent) override;
+
+  bool GetBeamEndLocation(const FVector &MuzzleSocketLocation, FHitResult &OutHitResult);
 
 private:
   // Camera boom positioning  the camera behind the character

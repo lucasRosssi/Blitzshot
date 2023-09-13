@@ -1,6 +1,12 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Weapon.h"
+#include "Kismet/GameplayStatics.h"
+#include "BulletHitInterface.h"
+#include "ShooterCharacter.h"
+#include "Enemy.h"
+#include "Engine/SkeletalMeshSocket.h"
+#include "Particles/ParticleSystemComponent.h"
 
 AWeapon::AWeapon() : ThrowWeaponTime(0.7f),
                      bFalling(false),
@@ -122,6 +128,99 @@ void AWeapon::Tick(float DeltaTime)
   {
     FRotator MeshRotation{0.f, GetItemMesh()->GetComponentRotation().Yaw, 0.f};
     GetItemMesh()->SetWorldRotation(MeshRotation, false, nullptr, ETeleportType::TeleportPhysics);
+  }
+}
+
+void AWeapon::SendProjectile()
+{
+  const USkeletalMeshSocket *BarrelSocket = GetItemMesh()->GetSocketByName("BarrelSocket");
+
+  if (BarrelSocket)
+  {
+    const FTransform SocketTransform = BarrelSocket->GetSocketTransform(GetItemMesh());
+
+    if (MuzzleFlash)
+    {
+      UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), MuzzleFlash, SocketTransform);
+    }
+
+    AShooterCharacter *Shooter = Cast<AShooterCharacter>(Owner);
+
+    if (Shooter)
+    {
+      FHitResult BeamHitResult;
+      bool bBeamEnd = Shooter->GetBeamEndLocation(
+          SocketTransform.GetLocation(),
+          BeamHitResult);
+
+      if (bBeamEnd)
+      {
+        // Spawn particles after updating correctly BeamEndPoint
+        // Check if hit actor implement BulletHitInterface
+        if (BeamHitResult.GetActor())
+        {
+          IBulletHitInterface *BulletHitInterface = Cast<IBulletHitInterface>(BeamHitResult.GetActor());
+
+          if (BulletHitInterface)
+          {
+            BulletHitInterface->BulletHit_Implementation(BeamHitResult, Owner, Owner->GetController());
+          }
+          else if (ImpactParticles) // Default particles
+          {
+            UGameplayStatics::SpawnEmitterAtLocation(
+                GetWorld(),
+                ImpactParticles,
+                BeamHitResult.Location,
+                FRotator(0.f),
+                true);
+          }
+
+          AEnemy *HitEnemy = Cast<AEnemy>(BeamHitResult.GetActor());
+          if (HitEnemy && !HitEnemy->IsDead())
+          {
+            int32 DamageDealt{};
+            bool bWeakspot = false;
+
+            if (BeamHitResult.BoneName.ToString() == HitEnemy->GetWeakspotBone())
+            // Weakspot shot
+            {
+              DamageDealt = WeakspotDamage;
+              bWeakspot = true;
+            }
+            // Normal shot
+            else
+            {
+              DamageDealt = Damage;
+            }
+            UGameplayStatics::ApplyDamage(
+                HitEnemy,
+                DamageDealt,
+                Owner->GetController(),
+                this,
+                UDamageType::StaticClass());
+
+            HitEnemy->ShowHitNumber(DamageDealt, BeamHitResult.Location, bWeakspot);
+            if (HitEnemy->GetHealth() - DamageDealt > 0)
+            {
+              HitEnemy->TakeBalanceDamage(BalanceDamage);
+            }
+          }
+        }
+
+        if (BeamParticles)
+        {
+          UParticleSystemComponent *Beam = UGameplayStatics::SpawnEmitterAtLocation(
+              GetWorld(),
+              BeamParticles,
+              SocketTransform);
+
+          if (Beam)
+          {
+            Beam->SetVectorParameter(FName("Target"), BeamHitResult.Location);
+          }
+        }
+      }
+    }
   }
 }
 

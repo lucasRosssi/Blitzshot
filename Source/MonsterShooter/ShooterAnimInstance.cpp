@@ -40,16 +40,17 @@ void UShooterAnimInstance::UpdateAnimationProperties(float DeltaTime)
 
   ECombatState CState = ShooterCharacter->GetCombatState();
 
+  // Is the character in the air?
+  bIsInAir = ShooterCharacter->GetCharacterMovement()->IsFalling();
+
   bReloading = CState == ECombatState::ECS_Reloading;
-  bShouldUseFABRIK = CState == ECombatState::ECS_Unoccupied || CState == ECombatState::ECS_FireTimerInProgress;
+
+  bShouldUseFABRIK = (CState == ECombatState::ECS_Unoccupied || CState == ECombatState::ECS_FireTimerInProgress) && !bIsInAir;
 
   // Get the speed of the character from velocity
   FVector Velocity{ShooterCharacter->GetVelocity()};
   Velocity.Z = 0;
   Speed = Velocity.Size();
-
-  // Is the character in the air?
-  bIsInAir = ShooterCharacter->GetCharacterMovement()->IsFalling();
 
   // Is the character accelerating
   bIsAccelerating = ShooterCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0;

@@ -69,7 +69,7 @@ struct FWeaponProperties : public FTableRowBase
   class UParticleSystem *MuzzleFlash;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
-  USoundCue *FireSound;
+  class USoundCue *FireSound;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
   FName AimFireMontageSection;
@@ -111,12 +111,14 @@ public:
 
   virtual void Tick(float DeltaTime) override;
 
+  void SendProjectile();
+
 protected:
   void StopFalling();
 
   virtual void OnConstruction(const FTransform &Transform) override;
 
-private:
+protected:
   FTimerHandle ThrowWeaponTimer;
   float ThrowWeaponTime;
   bool bFalling;
@@ -204,7 +206,7 @@ private:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data Table", meta = (AllowPrivateAccess = "true"))
   float Accuracy;
 
-  // Bullet trail
+  // Projectile trail
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data Table", meta = (AllowPrivateAccess = "true"))
   UParticleSystem *BeamParticles;
 
@@ -215,6 +217,12 @@ private:
   /** How much balance bar damage each shot does */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data Table", meta = (AllowPrivateAccess = "true"))
   float BalanceDamage;
+
+  ACharacter *Owner;
+
+  // Particles spawned upon projectile impact
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+  UParticleSystem *ImpactParticles;
 
 public:
   // Adds impulse to the thrown Weapon
@@ -241,10 +249,10 @@ public:
   FORCEINLINE UParticleSystem *GetBeamParticles() const { return BeamParticles; }
   FORCEINLINE float GetStability() const { return Stability; }
   FORCEINLINE float GetBalanceDamage() const { return BalanceDamage; }
+  FORCEINLINE void SetMovingClip(bool Move) { bMovingClip = Move; }
+  FORCEINLINE void SetOwner(ACharacter *Shooter) { Owner = Shooter; }
 
   void ReloadAmmo(int32 Amount);
-
-  FORCEINLINE void SetMovingClip(bool Move) { bMovingClip = Move; }
 
   bool ClipIsFull();
 };
