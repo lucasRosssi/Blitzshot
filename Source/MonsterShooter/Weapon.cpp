@@ -144,12 +144,12 @@ void AWeapon::SendProjectile()
       UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), MuzzleFlash, SocketTransform);
     }
 
-    AShooterCharacter *Shooter = Cast<AShooterCharacter>(Shooter);
+    AShooterCharacter *ShooterCharacter = Cast<AShooterCharacter>(Shooter);
 
-    if (Shooter)
+    if (ShooterCharacter)
     {
       FHitResult BeamHitResult;
-      bool bBeamEnd = Shooter->GetBeamEndLocation(
+      bool bBeamEnd = ShooterCharacter->GetBeamEndLocation(
           SocketTransform.GetLocation(),
           BeamHitResult);
 
