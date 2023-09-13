@@ -123,6 +123,10 @@ protected:
   float ThrowWeaponTime;
   bool bFalling;
 
+  /** Name (id) of the weapon in the table */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
+  FName WeaponName;
+
   /** Type of the weapon */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
   EWeaponType WeaponType;

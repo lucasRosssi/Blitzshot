@@ -18,4 +18,6 @@ public:
 	ABowAndArrow();
 
 	virtual void Tick(float DeltaTime) override;
+
+private:
 };

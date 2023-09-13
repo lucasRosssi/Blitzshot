@@ -5,6 +5,8 @@
 ABowAndArrow::ABowAndArrow()
 {
   PrimaryActorTick.bCanEverTick = true;
+
+  WeaponType = EWeaponType::EWT_BowAndArrow;
 }
 
 void ABowAndArrow::Tick(float DeltaTime)

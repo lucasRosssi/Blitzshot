@@ -275,6 +275,7 @@ public:
   FORCEINLINE int32 GetSlotIndex() const { return SlotIndex; }
   FORCEINLINE void SetSlotIndex(int32 Index) { SlotIndex = Index; }
   FORCEINLINE void SetItemName(FString Name) { ItemName = Name; }
+  FORCEINLINE FString GetItemName() const { return ItemName; }
   FORCEINLINE void SetIconItem(UTexture2D *Icon) { IconItem = Icon; }
   FORCEINLINE void SetMaterialInstance(UMaterialInstance *Instance) { MaterialInstance = Instance; }
   FORCEINLINE UMaterialInstance *GetMaterialInstance() const { return MaterialInstance; }

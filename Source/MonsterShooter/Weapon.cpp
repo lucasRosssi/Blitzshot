@@ -58,21 +58,7 @@ void AWeapon::OnConstruction(const FTransform &Transform)
   {
     FWeaponProperties *WeaponDataRow = nullptr;
 
-    switch (WeaponType)
-    {
-    case EWeaponType::EWT_SubmachineGun:
-      WeaponDataRow = WeaponTableObject->FindRow<FWeaponProperties>(FName("SubmachineGun"), TEXT(""));
-      break;
-    case EWeaponType::EWT_AssaultRifle:
-      WeaponDataRow = WeaponTableObject->FindRow<FWeaponProperties>(FName("AssaultRifle"), TEXT(""));
-      break;
-    case EWeaponType::EWT_Pistol:
-      WeaponDataRow = WeaponTableObject->FindRow<FWeaponProperties>(FName("Pistol"), TEXT(""));
-      break;
-    case EWeaponType::EWT_Uzi:
-      WeaponDataRow = WeaponTableObject->FindRow<FWeaponProperties>(FName("Uzi"), TEXT(""));
-      break;
-    }
+    WeaponDataRow = WeaponTableObject->FindRow<FWeaponProperties>(FName(WeaponName), TEXT(""));
 
     if (WeaponDataRow)
     {
