@@ -218,7 +218,7 @@ protected:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data Table", meta = (AllowPrivateAccess = "true"))
   float BalanceDamage;
 
-  ACharacter *Owner;
+  ACharacter *Shooter;
 
   // Particles spawned upon projectile impact
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
@@ -250,7 +250,7 @@ public:
   FORCEINLINE float GetStability() const { return Stability; }
   FORCEINLINE float GetBalanceDamage() const { return BalanceDamage; }
   FORCEINLINE void SetMovingClip(bool Move) { bMovingClip = Move; }
-  FORCEINLINE void SetOwner(ACharacter *Shooter) { Owner = Shooter; }
+  FORCEINLINE void SetShooter(ACharacter *Shooter) { Shooter = Shooter; }
 
   void ReloadAmmo(int32 Amount);
 

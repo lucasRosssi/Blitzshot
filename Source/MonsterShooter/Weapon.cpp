@@ -144,7 +144,7 @@ void AWeapon::SendProjectile()
       UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), MuzzleFlash, SocketTransform);
     }
 
-    AShooterCharacter *Shooter = Cast<AShooterCharacter>(Owner);
+    AShooterCharacter *Shooter = Cast<AShooterCharacter>(Shooter);
 
     if (Shooter)
     {
@@ -163,7 +163,7 @@ void AWeapon::SendProjectile()
 
           if (BulletHitInterface)
           {
-            BulletHitInterface->BulletHit_Implementation(BeamHitResult, Owner, Owner->GetController());
+            BulletHitInterface->BulletHit_Implementation(BeamHitResult, Shooter, Shooter->GetController());
           }
           else if (ImpactParticles) // Default particles
           {
@@ -192,14 +192,16 @@ void AWeapon::SendProjectile()
             {
               DamageDealt = Damage;
             }
+
             UGameplayStatics::ApplyDamage(
                 HitEnemy,
                 DamageDealt,
-                Owner->GetController(),
+                Shooter->GetController(),
                 this,
                 UDamageType::StaticClass());
 
             HitEnemy->ShowHitNumber(DamageDealt, BeamHitResult.Location, bWeakspot);
+
             if (HitEnemy->GetHealth() - DamageDealt > 0)
             {
               HitEnemy->TakeBalanceDamage(BalanceDamage);
