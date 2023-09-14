@@ -13,7 +13,8 @@ AWeapon::AWeapon() : ThrowWeaponTime(0.7f),
                      WeaponType(EWeaponType::EWT_SubmachineGun),
                      ReloadMontageSection(FName(TEXT("Reload SMG"))),
                      ClipBoneName(TEXT("smg_clip")),
-                     bAutomatic(true)
+                     bAutomatic(true),
+                     bReloadable(true)
 {
   PrimaryActorTick.bCanEverTick = true;
 }

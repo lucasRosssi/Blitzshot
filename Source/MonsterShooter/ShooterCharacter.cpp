@@ -1004,7 +1004,7 @@ void AShooterCharacter::PlayGunFireMontage()
 
 void AShooterCharacter::ReloadWeapon()
 {
-  if (!EquippedWeapon || CombatState != ECombatState::ECS_Unoccupied)
+  if (!EquippedWeapon || CombatState != ECombatState::ECS_Unoccupied || !EquippedWeapon->IsReloadable())
     return;
 
   // Do we have ammo of the correct type?

@@ -228,6 +228,10 @@ protected:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
   UParticleSystem *ImpactParticles;
 
+  /** If the weapon has normal reload mechanics */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data Table", meta = (AllowPrivateAccess = "true"))
+  bool bReloadable;
+
 public:
   // Adds impulse to the thrown Weapon
   void ThrowWeapon();
@@ -255,6 +259,7 @@ public:
   FORCEINLINE float GetBalanceDamage() const { return BalanceDamage; }
   FORCEINLINE void SetMovingClip(bool Move) { bMovingClip = Move; }
   FORCEINLINE void SetShooter(ACharacter *OwnerShooter) { Shooter = OwnerShooter; }
+  FORCEINLINE bool IsReloadable() const { return bReloadable; }
 
   void ReloadAmmo(int32 Amount);
 

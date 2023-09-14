@@ -7,6 +7,7 @@ ABowAndArrow::ABowAndArrow()
   PrimaryActorTick.bCanEverTick = true;
 
   WeaponType = EWeaponType::EWT_BowAndArrow;
+  bReloadable = false;
 }
 
 void ABowAndArrow::Tick(float DeltaTime)
