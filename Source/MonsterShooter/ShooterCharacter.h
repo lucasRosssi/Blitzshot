@@ -213,7 +213,6 @@ protected:
 
   // Fire weapon functions
   void PlayFireSound();
-  void SendBullet();
   void PlayGunFireMontage();
 
   // Reload functions
