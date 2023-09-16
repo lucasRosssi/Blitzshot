@@ -186,8 +186,6 @@ protected:
   UFUNCTION()
   void AutoFireReset();
 
-  bool TraceUnderCrosshair(FHitResult &OutHitResult, FVector &OutHitLocation, bool bShooting = false);
-
   void ApplyRecoil(float DeltaTime);
 
   /** Trace for items if OverlappedItemCount >= 0 */
@@ -280,6 +278,8 @@ public:
 
   // Called to bind functionality to input
   virtual void SetupPlayerInputComponent(class UInputComponent *PlayerInputComponent) override;
+
+  bool TraceUnderCrosshair(FHitResult &OutHitResult, FVector &OutHitLocation, bool bShooting = false);
 
   bool GetBeamEndLocation(const FVector &MuzzleSocketLocation, FHitResult &OutHitResult);
 

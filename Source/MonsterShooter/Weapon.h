@@ -111,7 +111,7 @@ public:
 
   virtual void Tick(float DeltaTime) override;
 
-  void SendProjectile();
+  virtual void SendProjectile();
 
 protected:
   void StopFalling();
@@ -222,6 +222,8 @@ protected:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data Table", meta = (AllowPrivateAccess = "true"))
   float BalanceDamage;
 
+  /** Character that owns this weapon */
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat", meta = (AllowPrivateAccess = "true"))
   ACharacter *Shooter;
 
   // Particles spawned upon projectile impact
@@ -260,6 +262,7 @@ public:
   FORCEINLINE void SetMovingClip(bool Move) { bMovingClip = Move; }
   FORCEINLINE void SetShooter(ACharacter *OwnerShooter) { Shooter = OwnerShooter; }
   FORCEINLINE bool IsReloadable() const { return bReloadable; }
+  FORCEINLINE ACharacter *GetShooter() const { return Shooter; }
 
   void ReloadAmmo(int32 Amount);
 

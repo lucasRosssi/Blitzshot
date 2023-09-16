@@ -19,5 +19,10 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 
+	virtual void SendProjectile() override;
+
 private:
+	/** Which projectile to spawn */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
+	UClass *ProjectileClass;
 };
