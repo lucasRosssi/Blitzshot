@@ -4,6 +4,7 @@
 #include "ShooterCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Weapon.h"
 
 UShooterAnimInstance::UShooterAnimInstance() : Speed(0.f),
                                                bIsInAir(false),
@@ -45,7 +46,14 @@ void UShooterAnimInstance::UpdateAnimationProperties(float DeltaTime)
 
   bReloading = CState == ECombatState::ECS_Reloading;
 
-  bShouldUseFABRIK = (CState == ECombatState::ECS_Unoccupied || CState == ECombatState::ECS_FireTimerInProgress) && !bIsInAir;
+  AWeapon *Weapon = ShooterCharacter->GetEquippedWeapon();
+
+  if (Weapon)
+  {
+    WeaponType = Weapon->GetWeaponType();
+  }
+
+  bShouldUseFABRIK = (CState == ECombatState::ECS_Unoccupied || CState == ECombatState::ECS_FireTimerInProgress) && !bIsInAir && WeaponType != EWeaponType::EWT_BowAndArrow;
 
   // Get the speed of the character from velocity
   FVector Velocity{ShooterCharacter->GetVelocity()};

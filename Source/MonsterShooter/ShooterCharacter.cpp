@@ -915,8 +915,19 @@ void AShooterCharacter::EquipWeapon(AWeapon *WeaponToEquip)
     return;
   }
 
+  // Check weapon to determine which hand it is held
+  FName SocketName;
+  switch (WeaponToEquip->GetWeaponType())
+  {
+  case EWeaponType::EWT_BowAndArrow:
+    SocketName = FName("LeftHandSocket");
+    break;
+  default:
+    SocketName = FName("RightHandSocket");
+  }
+
   // Get the Hand Socket
-  const USkeletalMeshSocket *HandSocket = GetMesh()->GetSocketByName(FName("RightHandSocket"));
+  const USkeletalMeshSocket *HandSocket = GetMesh()->GetSocketByName(SocketName);
 
   if (HandSocket)
   {

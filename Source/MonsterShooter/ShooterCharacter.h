@@ -618,6 +618,8 @@ public:
 
   FORCEINLINE float GetDodgeHeal() const { return DodgeHeal; }
 
+  FORCEINLINE AWeapon *GetEquippedWeapon() const { return EquippedWeapon; }
+
   void Stagger();
 
   void Heal(float Amount);

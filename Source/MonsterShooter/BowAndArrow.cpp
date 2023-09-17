@@ -11,6 +11,8 @@ ABowAndArrow::ABowAndArrow()
 
   WeaponType = EWeaponType::EWT_BowAndArrow;
   bReloadable = false;
+  AimFireMontageSection = FName("BowAimFire");
+  HipFireMontageSection = FName("BowHipFire");
 }
 
 void ABowAndArrow::Tick(float DeltaTime)

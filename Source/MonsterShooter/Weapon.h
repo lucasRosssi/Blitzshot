@@ -241,7 +241,7 @@ public:
   FORCEINLINE int32 GetMagazineCapacity() const { return MagazineCapacity; }
   FORCEINLINE int32 GetAmmo() const { return Ammo; }
   /** Called from Character class when firing weapon */
-  void ConsumeAmmo();
+  virtual void ConsumeAmmo();
 
   FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; }
   FORCEINLINE EAmmoType GetAmmoType() const { return AmmoType; }
